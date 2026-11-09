@@ -49,6 +49,7 @@ The application aims to deliver an intuitive restaurant experience through a mod
 
 ## 🛠️ Technology Stack
 
+<<<<<<< HEAD
 | Technology | Purpose |
 |---|---|
 | Next.js | Full-stack React framework |
@@ -58,6 +59,17 @@ The application aims to deliver an intuitive restaurant experience through a mod
 | Supabase | PostgreSQL database and file storage |
 | Auth.js | Authentication |
 | Git & GitHub | Version control |
+=======
+| Technology   | Purpose                              |
+| ------------ | ------------------------------------ |
+| Next.js      | Full-stack React framework           |
+| React        | User interface development           |
+| TypeScript   | Static typing                        |
+| Tailwind CSS | Styling and responsive design        |
+| Supabase     | PostgreSQL database and file storage |
+| Auth.js      | Authentication                       |
+| Git & GitHub | Version control                      |
+>>>>>>> 1fac754 (integrate menu data and image from supabase)
 
 Additional tools and technologies may be introduced as the project evolves.
 
@@ -65,10 +77,17 @@ Additional tools and technologies may be introduced as the project evolves.
 
 Tasty Treat is planned as two independently maintained applications sharing a common database.
 
+<<<<<<< HEAD
 | Application | Repository | Responsibility |
 |---|---|---|
 | Customer Website | `tasty-treat-website` | Customer-facing restaurant website |
 | Admin Dashboard | `tasty-treat-admin` | Restaurant operations and administration |
+=======
+| Application      | Repository            | Responsibility                           |
+| ---------------- | --------------------- | ---------------------------------------- |
+| Customer Website | `tasty-treat-website` | Customer-facing restaurant website       |
+| Admin Dashboard  | `tasty-treat-admin`   | Restaurant operations and administration |
+>>>>>>> 1fac754 (integrate menu data and image from supabase)
 
 Both applications will use the shared Supabase PostgreSQL database.
 
