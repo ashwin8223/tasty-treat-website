@@ -32,10 +32,11 @@ export default function AboutPage() {
         </div>
         <div className="editorial-image">
           <Image
-            src="/images/restaurant-story.webp"
-            alt="Restaurant interior"
+            src="/our-story-v2.webp"
+            alt="Our Story"
             fill
             sizes="(max-width: 800px) 90vw, 45vw"
+            priority
           />
         </div>
       </section>

@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { ArrowUpRight, Sparkles } from "lucide-react";
-import { menuItems } from "@/data/menu";
 import { Hero } from "./_components/hero";
 import { SectionTitle } from "./_components/section-title";
 import { MenuCard } from "./_components/menu-card";
 import { FeatureStrip } from "./_components/feature-strip";
+import { getMenuItems } from "./_lib/data-service";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const menuItems = await getMenuItems();
+
   return (
     <>
       <Hero />
@@ -23,7 +25,7 @@ export default function HomePage() {
         </div>
         <div className="menu-grid">
           {menuItems
-            .filter((item) => item.featured)
+            .filter((item) => item.isFeatured)
             .slice(0, 4)
             .map((item) => (
               <MenuCard key={item.id} item={item} />

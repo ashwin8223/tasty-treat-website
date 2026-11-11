@@ -4,7 +4,6 @@ import { MenuClient } from "./menuClient";
 
 export default async function MenuPage() {
   const menuItems = await getMenuItems();
-  console.log(menuItems.length);
 
   return (
     <>

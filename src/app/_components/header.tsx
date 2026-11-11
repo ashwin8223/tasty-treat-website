@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ShoppingBag,
-  Menu as MenuIcon,
-  X,
-  UtensilsCrossed,
-} from "lucide-react";
+import { ShoppingBag, Menu as MenuIcon, X } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./cart-provider";
+import Image from "next/image";
 
 const links = [
   { href: "/", label: "Home" },
@@ -27,12 +23,14 @@ export function Header() {
     <header className="site-header">
       <div className="container nav-wrap">
         <Link href="/" className="brand" aria-label="Tasty Treat home">
-          <span className="brand-mark">
-            <UtensilsCrossed size={19} />
-          </span>
-          <span>
-            TASTY<span className="accent">.</span> TREAT
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Tasty Treat – A World of Global Flavors"
+            width={1024}
+            height={512}
+            priority
+            className="brand-logo header-logo"
+          />
         </Link>
         <nav className="desktop-nav" aria-label="Main navigation">
           {links.map((link) => (

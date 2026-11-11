@@ -1,4 +1,6 @@
+import { SiInstagram, SiFacebook, SiX } from "@icons-pack/react-simple-icons";
 import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export function Footer() {
@@ -7,22 +9,25 @@ export function Footer() {
       <div className="container footer-grid">
         <div className="footer-brand">
           <Link href="/" className="brand">
-            <span className="brand-mark">✳</span>
-            <span>
-              TASTY<span className="accent">.</span> TREAT
-            </span>
+            <Image
+              src="/logo.png"
+              alt="Tasty Treat – A World of Global Flavors"
+              width={1024}
+              height={512}
+              className="brand-logo footer-logo mb-4"
+            />
           </Link>
           <p>Good food. Good mood. Thoughtfully made, freshly served.</p>
           <div className="socials">
-            <a href="#" aria-label="Instagram">
-              {/* <Instagram size={18} /> */}
-            </a>
-            <a href="#" aria-label="Facebook">
-              {/* <Facebook size={18} /> */}
-            </a>
-            <a href="#" aria-label="Twitter">
-              {/* <Twitter size={18} /> */}
-            </a>
+            <Link href="https://www.instagram.com/" aria-label="Instagram">
+              <SiInstagram size={18} />
+            </Link>
+            <Link href="https://www.facebook.com/" aria-label="Facebook">
+              <SiFacebook size={18} />
+            </Link>
+            <Link href="https://x.com/" aria-label="Twitter">
+              <SiX size={18} />
+            </Link>
           </div>
         </div>
         <div>
