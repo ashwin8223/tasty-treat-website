@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../_components/cart-provider";
+import { SubmitEvent } from "react";
 
 export default function CheckoutPage() {
   const { lines, subtotal, clearCart } = useCart();
@@ -18,6 +19,13 @@ export default function CheckoutPage() {
         </div>
       </section>
     );
+
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    clearCart();
+    router.push("/orders");
+  }
+
   return (
     <section className="container page-content">
       <span className="eyebrow">ALMOST THERE</span>
@@ -25,14 +33,7 @@ export default function CheckoutPage() {
         Checkout<span className="accent">.</span>
       </h1>
       <div className="checkout-layout">
-        <form
-          className="surface-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            clearCart();
-            router.push("/orders");
-          }}
-        >
+        <form className="surface-form" onSubmit={handleSubmit}>
           <h2>Delivery details</h2>
           <div className="form-grid">
             <label>
