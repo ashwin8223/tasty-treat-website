@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MenuCard } from "../_components/menu-card";
 import type { MenuItem } from "../_lib/data-service";
 
@@ -17,9 +17,55 @@ const ITEMS_PER_PAGE = 12;
 
 export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
   const [cuisine, setCuisine] = useState("All");
+  const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
+  const categoryRef = useRef<HTMLDivElement>(null);
+
+  // Close category dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        categoryRef.current &&
+        !categoryRef.current.contains(event.target as Node)
+      ) {
+        setCategoryOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setCategoryOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  // Get unique category names from the menu items
+  const categories = useMemo(
+    () => [
+      "All",
+      ...Array.from(
+        new Set(
+          menuItems
+            .map((item) => item.categories?.name)
+            .filter((name): name is string => Boolean(name)),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    ],
+    [menuItems],
+  );
+
+  // Filter menu items
   const filtered = useMemo(
     () =>
       menuItems.filter((item) => {
@@ -30,12 +76,13 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
           (cuisine === "All" ||
             itemCuisine === cuisine ||
             itemCuisine === "Shared") &&
+          (category === "All" || itemCategory === category) &&
           `${item.name} ${item.description ?? ""} ${itemCategory}`
             .toLowerCase()
             .includes(query.toLowerCase())
         );
       }),
-    [menuItems, cuisine, query],
+    [menuItems, cuisine, category, query],
   );
 
   // Calculate pagination
@@ -67,7 +114,8 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
   return (
     <section className="container section-block">
       <div className="menu-toolbar">
-        <div className="filter-pills">
+        {/* Cuisine filters */}
+        <div className="filter-pills" aria-label="Filter by cuisine">
           {cuisines.map((item) => (
             <button
               key={item}
@@ -84,6 +132,65 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
           ))}
         </div>
 
+        {/* Custom category dropdown */}
+        <div className="category-dropdown" ref={categoryRef}>
+          <button
+            type="button"
+            className={`category-dropdown-trigger ${
+              categoryOpen ? "open" : ""
+            }`}
+            onClick={() => setCategoryOpen((open) => !open)}
+            aria-expanded={categoryOpen}
+            aria-haspopup="listbox"
+            aria-label="Filter by category"
+          >
+            <span>{category === "All" ? "All categories" : category}</span>
+
+            <svg
+              className="category-dropdown-arrow"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+
+          {categoryOpen && (
+            <div className="category-dropdown-menu" role="listbox">
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  role="option"
+                  aria-selected={category === item}
+                  className={`category-dropdown-option ${
+                    category === item ? "selected" : ""
+                  }`}
+                  onClick={() => {
+                    setCategory(item);
+                    setCurrentPage(1);
+                    setCategoryOpen(false);
+                  }}
+                >
+                  <span>{item === "All" ? "All categories" : item}</span>
+
+                  {category === item && (
+                    <span className="category-dropdown-check">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Search */}
         <input
           className="search-input"
           placeholder="Search dishes..."
@@ -95,6 +202,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
         />
       </div>
 
+      {/* Menu items and pagination */}
       {currentItems.length ? (
         <>
           <div className="menu-grid">
@@ -172,7 +280,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
       ) : (
         <div className="empty-state">
           <h3>No dishes found</h3>
-          <p>Try another search or cuisine.</p>
+          <p>Try another search, cuisine or category.</p>
         </div>
       )}
     </section>

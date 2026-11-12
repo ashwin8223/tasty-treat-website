@@ -388,6 +388,76 @@ button {
   font-size: 11px;
   line-height: 1.65;
 }
+
+/* Menu card quantity selector */
+.menu-card-quantity {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-height: 40px;
+  padding: 5px 8px;
+
+  border: 1px solid rgba(232, 117, 50, 0.35);
+  border-radius: 999px;
+  background: #191b19;
+  color: #ffffff;
+
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.menu-card-quantity button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 27px;
+  height: 27px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #e87532;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.menu-card-quantity button:hover {
+  background: rgba(232, 117, 50, 0.15);
+}
+
+.menu-card-quantity span {
+  min-width: 15px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-card-quantity .menu-card-remove {
+  margin-left: 3px;
+  padding-left: 8px;
+  width: 29px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  color: #a7a7a7;
+}
+
+.menu-card-quantity .menu-card-remove:hover {
+  color: #ef6b5b;
+  background: transparent;
+}
+
 .dietary {
   display: inline-block;
   padding: 4px 7px;
@@ -1105,7 +1175,26 @@ textarea::placeholder {
   .checkout-layout {
     gap: 30px;
   }
+
+  .menu-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .filter-pills {
+    flex: 1 1 100%;
+  }
+
+  .category-select {
+    width: 150px;
+    flex: 0 0 150px;
+  }
+
+  .search-input {
+    width: 190px;
+    flex: 0 0 190px;
+  }
 }
+
 @media (max-width: 700px) {
   .container {
     width: min(100% - 32px, 560px);
@@ -1273,6 +1362,16 @@ textarea::placeholder {
   }
   .page-content {
     padding-block: 55px 70px;
+  }
+  .category-select {
+    width: 100%;
+    flex: none;
+  }
+  .category-select,
+  .search-input {
+    height: 40px;
+    padding: 8px 12px;
+    font-size: 11px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1614,5 +1713,737 @@ textarea::placeholder {
   .tt-chat-launcher {
     width: 56px;
     height: 56px;
+  }
+}
+
+/* Sticky bottom cart bar */
+.cart-bottom-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+
+  width: min(460px, calc(100% - 40px));
+  padding: 14px 16px;
+
+  background: #191b19;
+  border: 1px solid rgba(232, 117, 50, 0.35);
+  border-radius: 14px;
+
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cart-bottom-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cart-bottom-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.cart-bottom-count svg {
+  color: #e87532;
+}
+
+.cart-bottom-subtotal {
+  color: #a7aaa5;
+  font-size: 11px;
+}
+
+.cart-bottom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  padding: 12px 16px;
+
+  background: #e87532;
+  border-radius: 9px;
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  transition: background 0.2s ease;
+}
+
+.cart-bottom-button:hover {
+  background: #d96525;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .cart-bottom-bar {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: calc(100% - 28px);
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .cart-bottom-count {
+    font-size: 12px;
+  }
+
+  .cart-bottom-subtotal {
+    font-size: 10px;
+  }
+
+  .cart-bottom-button {
+    padding: 11px 13px;
+    font-size: 11px;
+  }
+}
+
+/* Checkout validation */
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: #ef6b5b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.surface-form input[aria-invalid="true"],
+.surface-form textarea[aria-invalid="true"] {
+  border-color: #ef6b5b;
+}
+
+.form-success {
+  margin-top: 12px;
+  color: #65bd87;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.surface-form button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Unavailable menu items */
+
+.menu-card-unavailable {
+  opacity: 0.55;
+}
+
+.menu-card-unavailable .menu-card-image img {
+  filter: grayscale(100%);
+}
+
+.unavailable-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 17, 16, 0.55);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}
+
+.category-select {
+  width: 170px;
+  flex: 0 0 170px;
+  padding: 13px 14px;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+
+  background: #141614;
+  color: var(--foreground);
+
+  font-size: 12px;
+  cursor: pointer;
+
+  transition: border-color 0.2s ease;
+}
+
+.category-select:hover {
+  border-color: rgba(232, 117, 50, 0.5);
+}
+
+.category-select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.category-select option {
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+@media (max-width: 700px) {
+  .category-select,
+  .search-input {
+    box-sizing: border-box;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+    line-height: normal;
+  }
+
+  .category-select {
+    width: 100%;
+    flex: 0 0 34px;
+  }
+
+  .search-input {
+    width: 100%;
+    flex: 0 0 34px;
+  }
+}
+
+/* ========================================
+   TASTY TREAT AUTHENTICATION
+======================================== */
+
+.auth-wrap {
+  width: 100%;
+  min-height: 65vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 75px 24px 100px;
+  background:
+    radial-gradient(
+      circle at 50% 15%,
+      rgba(232, 117, 50, 0.09),
+      transparent 42%
+    ),
+    var(--background);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  min-width: 0;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.auth-card .eyebrow {
+  margin-bottom: 14px;
+}
+
+.auth-card h1 {
+  margin: 12px 0;
+  color: var(--foreground);
+  font-size: clamp(32px, 5vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.06em;
+}
+
+.auth-card > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+/* Sign In / Sign Up tabs */
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 5px;
+  margin: 28px 0 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+}
+
+.auth-tabs button {
+  min-height: 42px;
+  padding: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+
+.auth-tabs button:hover {
+  color: var(--foreground);
+}
+
+.auth-tabs button.active {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+/* Form */
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #d4d7d0;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.auth-form input {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: none;
+  background: #141614;
+  color: var(--foreground);
+  font-size: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.auth-form input::placeholder {
+  color: #737a71;
+}
+
+.auth-form input:focus {
+  border-color: var(--accent);
+}
+
+/* Password visibility */
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-field input {
+  padding-right: 65px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--accent);
+}
+
+/* Forgot password */
+
+.forgot-password {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.forgot-password a {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.forgot-password a:hover {
+  color: var(--accent-hover);
+}
+
+/* Submit button */
+
+.auth-form .button-primary {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+/* OR divider */
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 25px 0;
+}
+
+.auth-divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-divider p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* Google button */
+
+.google-auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 650;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.google-auth-button:hover {
+  border-color: rgba(232, 117, 50, 0.5);
+  background: #292c28;
+}
+
+.google-icon {
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #4285f4;
+}
+
+/* Account switch */
+
+.auth-foot {
+  margin-top: 25px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.auth-foot button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.auth-foot button:hover {
+  color: var(--accent-hover);
+}
+
+/* Terms and privacy */
+
+.auth-card .form-note {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+/* ========================================
+   TABLET
+======================================== */
+
+@media (max-width: 768px) {
+  .auth-wrap {
+    min-height: 65vh;
+    padding: 55px 20px 75px;
+  }
+
+  .auth-card {
+    max-width: 430px;
+    padding: 32px;
+  }
+}
+
+/* ========================================
+   MOBILE
+======================================== */
+
+@media (max-width: 480px) {
+  .auth-wrap {
+    min-height: auto;
+    padding: 38px 16px 65px;
+  }
+
+  .auth-card {
+    padding: 26px 21px;
+    border-radius: 10px;
+  }
+
+  .auth-card h1 {
+    font-size: 32px;
+  }
+
+  .auth-tabs {
+    margin: 23px 0;
+  }
+
+  .auth-form {
+    gap: 16px;
+  }
+
+  .auth-divider {
+    margin: 22px 0;
+  }
+
+  .auth-foot {
+    margin-top: 22px;
+  }
+}
+
+/* ========================================
+   SMALL MOBILE
+======================================== */
+
+@media (max-width: 360px) {
+  .auth-wrap {
+    padding: 28px 12px 55px;
+  }
+
+  .auth-card {
+    padding: 23px 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 28px;
+  }
+
+  .auth-tabs button {
+    font-size: 11px;
+  }
+
+  .google-auth-button {
+    gap: 8px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+}
+
+/* ========================================
+   CUSTOM CATEGORY DROPDOWN
+======================================== */
+
+.category-dropdown {
+  position: relative;
+  width: 180px;
+  flex: 0 0 180px;
+  z-index: 10;
+}
+
+/* Dropdown trigger */
+
+.category-dropdown-trigger {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 13px;
+
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--foreground);
+
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.category-dropdown-trigger:hover,
+.category-dropdown-trigger.open {
+  border-color: rgba(232, 117, 50, 0.6);
+}
+
+.category-dropdown-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-dropdown-arrow {
+  flex: 0 0 auto;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+
+.category-dropdown-trigger.open .category-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown options panel */
+
+.category-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 5px;
+  border: 1px solid rgba(232, 117, 50, 0.2);
+  border-radius: 8px;
+
+  background: #191b19;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+
+  animation: category-dropdown-appear 0.16s ease-out;
+}
+
+@keyframes category-dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Individual options */
+
+.category-dropdown-option {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 5px;
+
+  background: transparent;
+  color: #b8bbb5;
+
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.category-dropdown-option:hover {
+  background: rgba(232, 117, 50, 0.1);
+  color: var(--foreground);
+}
+
+.category-dropdown-option.selected {
+  background: rgba(232, 117, 50, 0.13);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.category-dropdown-check {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Themed scrollbar - Chrome, Edge, Safari */
+
+.category-dropdown-menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.category-dropdown-menu::-webkit-scrollbar-track {
+  background: #141614;
+  border-radius: 10px;
+}
+
+.category-dropdown-menu::-webkit-scrollbar-thumb {
+  background: #75401f;
+  border-radius: 10px;
+}
+
+.category-dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Themed scrollbar - Firefox */
+
+.category-dropdown-menu {
+  scrollbar-width: thin;
+  scrollbar-color: #75401f #141614;
+}
+
+/* Responsive dropdown */
+
+@media (max-width: 768px) {
+  .category-dropdown {
+    width: 160px;
+    flex-basis: 160px;
+  }
+
+  .category-dropdown-menu {
+    max-height: 190px;
+  }
+}
+
+@media (max-width: 600px) {
+  .category-dropdown {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .category-dropdown-trigger {
+    min-height: 40px;
+  }
+
+  .category-dropdown-menu {
+    max-height: 180px;
   }
 }

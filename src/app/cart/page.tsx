@@ -27,7 +27,16 @@ export default function CartPage() {
             {lines.map(({ item, quantity }) => (
               <article className="cart-line" key={item.id}>
                 <div className="cart-thumb">
-                  <Image src={item.image} alt={item.name} fill sizes="100px" />
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="100px"
+                    />
+                  ) : (
+                    <span>No image</span>
+                  )}
                 </div>
                 <div className="cart-line-main">
                   <h3>{item.name}</h3>

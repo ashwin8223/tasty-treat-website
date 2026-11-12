@@ -5,6 +5,7 @@ import { Header } from "./_components/header";
 import { CartProvider } from "./_components/cart-provider";
 import { Footer } from "./_components/footer";
 import { Chatbot } from "./_components/chatbot";
+import { CartBottomBar } from "./_components/cart-bottom-bar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -45,6 +46,7 @@ export default function RootLayout({
           <main>{children}</main>
           <Footer />
           <Chatbot />
+          <CartBottomBar />
         </CartProvider>
       </body>
     </html>
