@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { signInAction } from "../_lib/actions";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
@@ -135,15 +136,17 @@ export default function LoginPage() {
           <span />
         </div>
 
-        <button type="button" className="google-auth-button">
-          <Image
-            src="https://authjs.dev/img/providers/google.svg"
-            alt="Google logo"
-            height="16"
-            width="16"
-          />
-          <span>Continue with Google</span>
-        </button>
+        <form action={signInAction}>
+          <button type="submit" className="google-auth-button">
+            <Image
+              src="https://authjs.dev/img/providers/google.svg"
+              alt="Google logo"
+              height="16"
+              width="16"
+            />
+            <span>Continue with Google</span>
+          </button>
+        </form>
 
         <div className="auth-foot">
           {isSignUp ? "Already have an account?" : "New to Tasty Treat?"}{" "}
