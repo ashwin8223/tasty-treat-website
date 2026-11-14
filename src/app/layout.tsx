@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Roboto } from "next/font/google";
 import "./_styles/globals.css";
-import { Header } from "./_components/header";
 import { CartProvider } from "./_components/cart-provider";
 import { Footer } from "./_components/footer";
 import { Chatbot } from "./_components/chatbot";
 import { CartBottomBar } from "./_components/cart-bottom-bar";
+import { Header } from "./_components/Header";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 

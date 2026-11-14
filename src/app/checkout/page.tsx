@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SubmitEvent, useState } from "react";
 import { useCart } from "../_components/cart-provider";
+import { createOrder } from "../_lib/actions";
 
 type CheckoutErrors = {
   fullName?: string;
@@ -16,7 +17,15 @@ export default function CheckoutPage() {
   const { lines, subtotal } = useCart();
 
   const [errors, setErrors] = useState<CheckoutErrors>({});
-  const [isValidated, setIsValidated] = useState(false);
+
+  const orderData = {
+    items: lines.map(({ item, quantity }) => ({
+      id: item.id,
+      quantity,
+    })),
+  };
+
+  const createOrderWithData = createOrder.bind(null, orderData);
 
   if (!lines.length) {
     return (
@@ -32,8 +41,6 @@ export default function CheckoutPage() {
   }
 
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-
     const formData = new FormData(e.currentTarget);
 
     const fullName = String(formData.get("fullName") ?? "").trim();
@@ -44,29 +51,24 @@ export default function CheckoutPage() {
 
     const newErrors: CheckoutErrors = {};
 
-    // Full name validation
     if (fullName.length < 2) {
       newErrors.fullName = "Please enter your full name.";
     }
 
-    // Email validation
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Please enter a valid email address.";
     }
 
-    // Phone validation
     const phoneDigits = phone.replace(/\D/g, "");
 
     if (phoneDigits.length < 7 || phoneDigits.length > 15) {
       newErrors.phone = "Please enter a valid phone number.";
     }
 
-    // City validation
     if (!city) {
       newErrors.city = "Please enter your city.";
     }
 
-    // Delivery address validation
     if (!address) {
       newErrors.address = "Please enter your delivery address.";
     }
@@ -74,13 +76,9 @@ export default function CheckoutPage() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      setIsValidated(false);
+      e.preventDefault();
       return;
     }
-
-    // Validation successful.
-    // Order creation will be implemented separately.
-    setIsValidated(true);
   }
 
   function handleFieldChange(field: keyof CheckoutErrors) {
@@ -88,8 +86,6 @@ export default function CheckoutPage() {
       ...current,
       [field]: undefined,
     }));
-
-    setIsValidated(false);
   }
 
   return (
@@ -101,7 +97,12 @@ export default function CheckoutPage() {
       </h1>
 
       <div className="checkout-layout">
-        <form className="surface-form" onSubmit={handleSubmit} noValidate>
+        <form
+          className="surface-form"
+          action={createOrderWithData}
+          onSubmit={handleSubmit}
+          noValidate
+        >
           <h2>Delivery details</h2>
 
           <div className="form-grid">
@@ -200,23 +201,12 @@ export default function CheckoutPage() {
             Pay online (demo)
           </label>
 
-          <button
-            className="button button-primary button-wide"
-            type="submit"
-            disabled={isValidated}
-          >
-            {isValidated ? "Details validated" : "Place demo order"}
+          <button className="button button-primary button-wide" type="submit">
+            Place order
           </button>
 
-          {isValidated && (
-            <p className="form-success" role="status">
-              Your details look good! Order creation and payment processing will
-              be connected in the next step.
-            </p>
-          )}
-
           <p className="form-note">
-            Demo checkout only. No payment is collected and no order is saved.
+            Demo checkout only. No payment is collected.
           </p>
         </form>
 

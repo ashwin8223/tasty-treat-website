@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { signInAction } from "../_lib/actions";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
@@ -11,6 +12,9 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isSignUp = activeTab === "signup";
+
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/menu";
 
   return (
     <section className="auth-wrap">
@@ -137,6 +141,7 @@ export default function LoginPage() {
         </div>
 
         <form action={signInAction}>
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
           <button type="submit" className="google-auth-button">
             <Image
               src="https://authjs.dev/img/providers/google.svg"
@@ -149,7 +154,7 @@ export default function LoginPage() {
         </form>
 
         <div className="auth-foot">
-          {isSignUp ? "Already have an account?" : "New to Tasty Treat?"}{" "}
+          {isSignUp ? "Already have an account?" : "New to Tasty Treat?"}
           <button
             type="button"
             onClick={() => setActiveTab(isSignUp ? "signin" : "signup")}
