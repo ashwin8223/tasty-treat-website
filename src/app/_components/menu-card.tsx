@@ -13,6 +13,9 @@ export function MenuCard({ item }: { item: MenuItem }) {
   const cartLine = lines.find((line) => line.item.id === item.id);
   const quantity = cartLine?.quantity ?? 0;
 
+  const isQuantityLimitReached = quantity >= 10;
+  const isCartLimitReached = lines.length >= 10;
+
   return (
     <article
       className={`menu-card ${isUnavailable ? "menu-card-unavailable" : ""}`}
@@ -36,6 +39,11 @@ export function MenuCard({ item }: { item: MenuItem }) {
           <button
             className="add-button"
             onClick={() => addItem(item)}
+            title={
+              isCartLimitReached
+                ? "Your cart can contain up to 10 different items"
+                : `Add ${item.name} to cart`
+            }
             aria-label={`Add ${item.name} to cart`}
           >
             <Plus size={20} />
@@ -53,6 +61,11 @@ export function MenuCard({ item }: { item: MenuItem }) {
 
             <button
               onClick={() => updateQuantity(item.id, quantity + 1)}
+              title={
+                isQuantityLimitReached
+                  ? "Maximum quantity is 10"
+                  : `Increase ${item.name} quantity`
+              }
               aria-label={`Increase ${item.name} quantity`}
             >
               <Plus size={15} />

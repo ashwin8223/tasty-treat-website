@@ -1,6 +1,6 @@
 import { PageHero } from "../_components/page-hero";
 import { getMenuItems } from "../_lib/data-service";
-import { MenuClient } from "./menuClient";
+import { MenuClient } from "../_components/menuClient";
 
 export default async function MenuPage() {
   const menuItems = await getMenuItems();

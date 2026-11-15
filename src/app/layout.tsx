@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, Roboto } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import "./_styles/globals.css";
 import { CartProvider } from "./_components/cart-provider";
 import { Footer } from "./_components/footer";
@@ -8,19 +9,6 @@ import { CartBottomBar } from "./_components/cart-bottom-bar";
 import { Header } from "./_components/Header";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
-
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-roboto",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -35,11 +23,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      data-scroll-behavior="smooth"
-      className={`${inter.variable} ${jakarta.variable} ${roboto.variable}`}
-    >
+    <html lang="en" data-scroll-behavior="smooth" className={inter.variable}>
       <body>
         <CartProvider>
           <Header />
@@ -47,6 +31,14 @@ export default function RootLayout({
           <Footer />
           <Chatbot />
           <CartBottomBar />
+          <Toaster
+            position="top-center"
+            gutter={12}
+            toastOptions={{
+              duration: 3500,
+              className: "tasty-toast",
+            }}
+          />
         </CartProvider>
       </body>
     </html>

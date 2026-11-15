@@ -9,6 +9,7 @@ import {
   X,
   UserRound,
   ChevronDown,
+  PackageCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "./cart-provider";
@@ -149,6 +150,15 @@ export function HeaderClient({ user }: HeaderClientProps) {
                   <span className="nav-account-status">Signed in</span>
                 </div>
 
+                <Link
+                  href="/orders"
+                  className="nav-account-link"
+                  onClick={closeMenus}
+                >
+                  <PackageCheck size={15} />
+                  <span>My Orders</span>
+                </Link>
+
                 <form
                   action={signOutAction}
                   onSubmit={() => {
@@ -208,6 +218,17 @@ export function HeaderClient({ user }: HeaderClientProps) {
                 <span className="mobile-nav-user-status">Signed in</span>
               </div>
             </div>
+          )}
+
+          {user && (
+            <Link
+              href="/orders"
+              className="mobile-nav-orders"
+              onClick={() => setOpen(false)}
+            >
+              <PackageCheck size={17} />
+              <span>My Orders</span>
+            </Link>
           )}
 
           {links.map((link) => (

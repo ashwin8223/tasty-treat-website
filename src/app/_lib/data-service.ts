@@ -80,30 +80,39 @@ export async function getMenuItems(): Promise<MenuItem[]> {
 export async function validateOrderItems(
   items: OrderItemInput[],
 ): Promise<ValidatedOrderItem[]> {
-  if (!items.length) {
+  if (!Array.isArray(items) || items.length === 0) {
     throw new Error("Your cart is empty");
   }
 
-  const itemIds = items.map((item) => item.id);
+  // Maximum 10 distinct menu items per order
+  if (items.length > 10) {
+    throw new Error("Your cart can contain up to 10 different items");
+  }
 
   // Validate item IDs and quantities
   if (
     !items.every(
       (item) =>
+        item !== null &&
+        typeof item === "object" &&
         Number.isInteger(item.id) &&
+        item.id > 0 &&
         Number.isInteger(item.quantity) &&
-        item.quantity > 0,
+        item.quantity > 0 &&
+        item.quantity <= 10,
     )
   ) {
-    throw new Error("Invalid order items");
+    throw new Error("Invalid order items or maximum quantity exceeded");
   }
+
+  const itemIds = items.map((item) => item.id);
 
   // Prevent duplicate menu item IDs
   if (new Set(itemIds).size !== itemIds.length) {
     throw new Error("Duplicate menu items detected");
   }
 
-  // Fetch menu data from Supabase
+  // Fetch authoritative menu data from Supabase
   const { data, error } = await supabase
     .from("menu")
     .select("id, price, isAvailable")
@@ -120,8 +129,8 @@ export async function validateOrderItems(
 
   const menuItems = data as {
     id: number;
-    price: number;
-    isAvailable: boolean;
+    price: number | null;
+    isAvailable: boolean | null;
   }[];
 
   const menuItemsById = new Map(menuItems.map((item) => [item.id, item]));
@@ -129,8 +138,20 @@ export async function validateOrderItems(
   return items.map((item) => {
     const menuItem = menuItemsById.get(item.id);
 
-    if (!menuItem || !menuItem.isAvailable) {
+    if (!menuItem) {
+      throw new Error("One or more menu items no longer exist");
+    }
+
+    if (menuItem.isAvailable !== true) {
       throw new Error("One or more items are currently unavailable");
+    }
+
+    if (
+      typeof menuItem.price !== "number" ||
+      !Number.isFinite(menuItem.price) ||
+      menuItem.price < 0
+    ) {
+      throw new Error("One or more menu items have an invalid price");
     }
 
     return {
