@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ShoppingBag,
   Menu as MenuIcon,
@@ -12,8 +12,9 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useCart } from "./cart-provider";
-import { signOutAction } from "../_lib/actions";
+import { logout } from "../_lib/apiAuth";
 
 const links = [
   { href: "/", label: "Home" },
@@ -32,9 +33,15 @@ type HeaderClientProps = {
 
 export function HeaderClient({ user }: HeaderClientProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { count } = useCart();
+
   const [open, setOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
   const accountRef = useRef<HTMLDetailsElement>(null);
+
+  const displayName = user?.name?.trim() || "there";
 
   // Close the desktop account dropdown on outside click or Escape.
   useEffect(() => {
@@ -67,6 +74,27 @@ export function HeaderClient({ user }: HeaderClientProps) {
 
     if (accountRef.current) {
       accountRef.current.open = false;
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      setIsSigningOut(true);
+
+      await logout();
+
+      closeMenus();
+
+      toast.success("Signed out successfully.");
+
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to sign out.",
+      );
+    } finally {
+      setIsSigningOut(false);
     }
   }
 
@@ -114,72 +142,70 @@ export function HeaderClient({ user }: HeaderClientProps) {
             <b>{count}</b>
           </Link>
 
-          {user ? (
-            <details className="nav-account" ref={accountRef}>
-              <summary
-                className="nav-account-trigger"
-                aria-label="Open account menu"
-              >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt=""
-                    width={28}
-                    height={28}
-                    unoptimized
-                    className="nav-avatar"
+          <div className="nav-account-slot">
+            {user ? (
+              <details className="nav-account" ref={accountRef}>
+                <summary
+                  className="nav-account-trigger"
+                  aria-label={`Account menu for ${displayName}`}
+                >
+                  {user.image ? (
+                    <Image
+                      src={user.image}
+                      alt=""
+                      width={28}
+                      height={28}
+                      unoptimized
+                      className="nav-avatar"
+                    />
+                  ) : (
+                    <span className="nav-account-icon">
+                      <UserRound size={17} />
+                    </span>
+                  )}
+
+                  <span className="nav-account-label">My Account</span>
+
+                  <ChevronDown
+                    size={13}
+                    className="nav-account-chevron"
+                    aria-hidden="true"
                   />
-                ) : (
-                  <span className="nav-account-icon">
-                    <UserRound size={16} />
-                  </span>
-                )}
+                </summary>
 
-                <ChevronDown
-                  size={13}
-                  className="nav-account-chevron"
-                  aria-hidden="true"
-                />
-              </summary>
+                <div className="nav-account-dropdown">
+                  <div className="nav-account-info">
+                    <span className="nav-account-name">Hi, {displayName}</span>
+                    <span className="nav-account-status">Signed in</span>
+                  </div>
 
-              <div className="nav-account-dropdown">
-                <div className="nav-account-info">
-                  <span className="nav-account-name">
-                    {user.name || "Your account"}
-                  </span>
-                  <span className="nav-account-status">Signed in</span>
-                </div>
+                  <Link
+                    href="/orders"
+                    className="nav-account-link"
+                    onClick={closeMenus}
+                  >
+                    <PackageCheck size={15} />
+                    <span>My Orders</span>
+                  </Link>
 
-                <Link
-                  href="/orders"
-                  className="nav-account-link"
-                  onClick={closeMenus}
-                >
-                  <PackageCheck size={15} />
-                  <span>My Orders</span>
-                </Link>
-
-                <form
-                  action={signOutAction}
-                  onSubmit={() => {
-                    if (accountRef.current) {
-                      accountRef.current.open = false;
-                    }
-                  }}
-                >
-                  <button type="submit" className="nav-account-signout">
+                  <button
+                    type="button"
+                    className="nav-account-signout"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                  >
                     <UserRound size={15} />
-                    <span>Sign out</span>
+                    <span>{isSigningOut ? "Signing out..." : "Sign out"}</span>
                   </button>
-                </form>
-              </div>
-            </details>
-          ) : (
-            <Link href="/login" className="nav-login">
-              <UserRound size={18} />
-              <span>Sign in</span>
-            </Link>
-          )}
+                </div>
+              </details>
+            ) : (
+              <Link href="/login" className="nav-login">
+                <UserRound size={17} />
+                <span>Sign in</span>
+              </Link>
+            )}
+          </div>
 
           <button
             className="mobile-menu-toggle"
@@ -200,8 +226,8 @@ export function HeaderClient({ user }: HeaderClientProps) {
                 <Image
                   src={user.image}
                   alt=""
-                  width={36}
-                  height={36}
+                  width={40}
+                  height={40}
                   unoptimized
                   className="mobile-nav-avatar"
                 />
@@ -212,10 +238,10 @@ export function HeaderClient({ user }: HeaderClientProps) {
               )}
 
               <div className="mobile-nav-user-info">
-                <span className="mobile-nav-user-name">
-                  {user.name || "Your account"}
+                <span className="mobile-nav-user-name">Hi, {displayName}</span>
+                <span className="mobile-nav-user-status">
+                  Your account · Signed in
                 </span>
-                <span className="mobile-nav-user-status">Signed in</span>
               </div>
             </div>
           )}
@@ -242,9 +268,13 @@ export function HeaderClient({ user }: HeaderClientProps) {
           ))}
 
           {user ? (
-            <form action={signOutAction} onSubmit={() => setOpen(false)}>
-              <button type="submit">Sign out</button>
-            </form>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? "Signing out..." : "Sign out"}
+            </button>
           ) : (
             <Link href="/login" onClick={() => setOpen(false)}>
               Sign in

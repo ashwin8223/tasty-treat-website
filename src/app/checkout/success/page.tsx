@@ -8,7 +8,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 
-import { auth } from "../../_lib/auth";
+import { createClient as createSupabaseServerClient } from "../../_lib/supabase-server";
 import { supabase } from "../../_lib/supabase";
 
 type CheckoutSuccessPageProps = {
@@ -20,10 +20,28 @@ type CheckoutSuccessPageProps = {
 export default async function CheckoutSuccessPage({
   searchParams,
 }: CheckoutSuccessPageProps) {
-  const session = await auth();
+  // Verify the authenticated Supabase user.
+  const supabaseServer = await createSupabaseServerClient();
 
-  if (!session?.user?.customerId) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabaseServer.auth.getUser();
+
+  if (authError || !user) {
     redirect("/login");
+  }
+
+  // Retrieve the existing customer linked to this user.
+  const { data: customer, error: customerError } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("authUserId", user.id)
+    .single();
+
+  if (customerError || !customer) {
+    console.error("Customer lookup failed:", customerError);
+    redirect("/menu");
   }
 
   const { orderId } = await searchParams;
@@ -39,7 +57,7 @@ export default async function CheckoutSuccessPage({
       "id, orderNumber, paymentMethod, paymentStatus, totalAmount, status",
     )
     .eq("id", parsedOrderId)
-    .eq("customerId", session.user.customerId)
+    .eq("customerId", customer.id)
     .single();
 
   if (error || !order) {

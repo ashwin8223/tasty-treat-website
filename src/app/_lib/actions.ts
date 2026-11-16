@@ -1,9 +1,9 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { auth, signIn, signOut } from "./auth";
-import { validateOrderItems } from "./data-service";
+import { getRestaurantSettings, validateOrderItems } from "./data-service";
 import { supabase } from "./supabase";
+import { createClient as createSupabaseServerClient } from "./supabase-server";
 
 type OrderData = {
   items: {
@@ -66,10 +66,28 @@ function roundToCents(amount: number) {
 }
 
 export async function createOrder(orderData: OrderData, formData: FormData) {
-  const session = await auth();
+  // Verify the authenticated Supabase user from the server session.
+  const supabaseServer = await createSupabaseServerClient();
 
-  if (!session?.user?.customerId || !session.user.email) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabaseServer.auth.getUser();
+
+  if (authError || !user) {
     throw new Error("You must be logged in to place an order");
+  }
+
+  // Find the existing customer record linked to this Supabase user.
+  const { data: customerRecord, error: customerLookupError } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("authUserId", user.id)
+    .single();
+
+  if (customerLookupError || !customerRecord) {
+    console.error("Customer lookup failed:", customerLookupError);
+    throw new Error("Your customer account could not be retrieved");
   }
 
   const checkoutDetails = validateCheckoutDetails(formData);
@@ -84,32 +102,10 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
     ),
   );
 
-  // Retrieve the restaurant's current settings.
-  const { data: settings, error: settingsError } = await supabase
-    .from("settings")
-    .select("deliveryFee, minimumOrderAmount, taxRate")
-    .single();
+  // Retrieve and validate the restaurant's current settings.
+  const settings = await getRestaurantSettings();
 
-  if (settingsError || !settings) {
-    console.error("Settings retrieval failed:", settingsError);
-    throw new Error("Order settings could not be retrieved");
-  }
-
-  const deliveryFee = Number(settings.deliveryFee);
-  const minimumOrderAmount = Number(settings.minimumOrderAmount);
-  const taxRate = Number(settings.taxRate);
-
-  if (
-    !Number.isFinite(deliveryFee) ||
-    !Number.isFinite(minimumOrderAmount) ||
-    !Number.isFinite(taxRate) ||
-    deliveryFee < 0 ||
-    minimumOrderAmount < 0 ||
-    taxRate < 0 ||
-    taxRate > 1
-  ) {
-    throw new Error("Restaurant settings contain invalid values");
-  }
+  const { deliveryFee, minimumOrderAmount, taxRate } = settings;
 
   if (subTotal < minimumOrderAmount) {
     throw new Error(
@@ -119,7 +115,8 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
 
   // Calculate the final order amount.
   const tax = roundToCents(subTotal * taxRate);
-  const totalAmount = roundToCents(subTotal + deliveryFee + tax);
+  const discount = 0;
+  const totalAmount = roundToCents(subTotal + deliveryFee + tax - discount);
 
   // Update the authenticated customer's profile.
   const { data: customer, error: customerError } = await supabase
@@ -130,7 +127,7 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
       address: checkoutDetails.address,
       city: checkoutDetails.city,
     })
-    .eq("id", session.user.customerId)
+    .eq("id", customerRecord.id)
     .select("id")
     .single();
 
@@ -154,7 +151,7 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
       subTotal,
       deliveryFee,
       tax,
-      discount: 0,
+      discount,
       totalAmount,
       deliveryAddress: `${checkoutDetails.address}, ${checkoutDetails.city}`,
       customerNotes: checkoutDetails.orderNotes || null,
@@ -204,12 +201,6 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
   };
 }
 
-export async function signInAction(formData: FormData) {
-  const callbackUrl = formData.get("callbackUrl")?.toString() || "/menu";
-
-  await signIn("google", { redirectTo: callbackUrl });
-}
-
-export async function signOutAction() {
-  await signOut({ redirectTo: "/login" });
+export async function getCartPricingSettings() {
+  return getRestaurantSettings();
 }

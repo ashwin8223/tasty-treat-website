@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { useCart } from "./cart-provider";
 import { createOrder } from "../_lib/actions";
+import type { RestaurantSettings } from "../_lib/data-service";
 
 type CheckoutFormProps = {
   email: string;
+  settings: RestaurantSettings;
 };
 
 type CheckoutErrors = {
@@ -17,7 +19,7 @@ type CheckoutErrors = {
   address?: string;
 };
 
-export default function CheckoutForm({ email }: CheckoutFormProps) {
+export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
   const { lines, subtotal, clearCart } = useCart();
   const router = useRouter();
 
@@ -33,6 +35,19 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
   };
 
   const createOrderWithData = createOrder.bind(null, orderData);
+
+  // Calculate checkout pricing using the restaurant settings.
+  const tax =
+    Math.round((subtotal * settings.taxRate + Number.EPSILON) * 100) / 100;
+
+  const discount = 0;
+
+  const total =
+    Math.round(
+      (subtotal + settings.deliveryFee + tax - discount + Number.EPSILON) * 100,
+    ) / 100;
+
+  const minimumOrderNotMet = subtotal < settings.minimumOrderAmount;
 
   if (!lines.length) {
     return (
@@ -79,7 +94,7 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length > 0) return;
+    if (Object.keys(newErrors).length > 0 || minimumOrderNotMet) return;
 
     try {
       setIsPending(true);
@@ -121,6 +136,7 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
       </h1>
 
       <div className="checkout-layout">
+        {/* Delivery and payment form */}
         <form className="surface-form" onSubmit={handleSubmit} noValidate>
           <h2>Delivery details</h2>
 
@@ -220,10 +236,18 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
           <button
             className="button button-primary button-wide"
             type="submit"
-            disabled={isPending}
+            disabled={isPending || minimumOrderNotMet}
           >
             {isPending ? "Placing order..." : "Place order"}
           </button>
+
+          {minimumOrderNotMet && (
+            <p className="form-note" role="alert">
+              Minimum order amount is ${settings.minimumOrderAmount.toFixed(2)}.
+              Add ${(settings.minimumOrderAmount - subtotal).toFixed(2)} more to
+              continue.
+            </p>
+          )}
 
           {submitError && (
             <p className="field-error" role="alert">
@@ -236,22 +260,65 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
           </p>
         </form>
 
-        <aside className="summary-card">
-          <h2>Your items</h2>
-
-          {lines.map(({ item, quantity }) => (
-            <div className="checkout-item" key={item.id}>
-              <span>
-                {quantity} × {item.name}
-              </span>
-              <strong>${(item.price * quantity).toFixed(2)}</strong>
-            </div>
-          ))}
-
-          <div className="summary-total">
-            <span>Subtotal</span>
-            <strong>${subtotal.toFixed(2)}</strong>
+        {/* Order summary and detailed pricing */}
+        <aside className="summary-card checkout-summary">
+          <div className="checkout-summary-heading">
+            <h2>Your order</h2>
+            <span>{lines.length} items</span>
           </div>
+
+          {/* Individual order items */}
+          <div className="checkout-items">
+            {lines.map(({ item, quantity }) => (
+              <div className="checkout-item" key={item.id}>
+                <div className="checkout-item-details">
+                  <span className="checkout-item-name">{item.name}</span>
+                  <span className="checkout-item-quantity">
+                    Qty: {quantity}
+                  </span>
+                </div>
+
+                <strong className="checkout-item-price">
+                  ${(item.price * quantity).toFixed(2)}
+                </strong>
+              </div>
+            ))}
+          </div>
+
+          {/* Detailed price breakdown */}
+          <div className="checkout-pricing">
+            <div className="pricing-row">
+              <span>Subtotal</span>
+              <strong>${subtotal.toFixed(2)}</strong>
+            </div>
+
+            <div className="pricing-row">
+              <span>Delivery</span>
+              <strong>${settings.deliveryFee.toFixed(2)}</strong>
+            </div>
+
+            <div className="pricing-row">
+              <span>Tax</span>
+              <strong>${tax.toFixed(2)}</strong>
+            </div>
+
+            {discount > 0 && (
+              <div className="pricing-row pricing-discount">
+                <span>Discount</span>
+                <strong>-${discount.toFixed(2)}</strong>
+              </div>
+            )}
+          </div>
+
+          {/* Final payable amount */}
+          <div className="pricing-row pricing-total">
+            <span>Total</span>
+            <strong>${total.toFixed(2)}</strong>
+          </div>
+
+          <p className="checkout-summary-note">
+            Your order total includes applicable delivery charges and taxes.
+          </p>
         </aside>
       </div>
     </section>

@@ -262,9 +262,9 @@ textarea::placeholder {
 
 .nav-wrap {
   min-height: 78px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 24px;
 }
 
@@ -304,7 +304,6 @@ textarea::placeholder {
 /* Desktop Navigation */
 .desktop-nav {
   display: flex;
-  flex: 1;
   align-items: center;
   justify-content: center;
   gap: 26px;
@@ -326,8 +325,17 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  justify-self: end;
   flex: 0 0 auto;
   gap: 14px;
+}
+
+.nav-account-slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 140px;
+  flex: 0 0 140px;
 }
 
 .cart-link {
@@ -359,6 +367,8 @@ textarea::placeholder {
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--surface);
   color: var(--foreground);
   font-size: 12px;
@@ -382,13 +392,23 @@ textarea::placeholder {
 
 .nav-account {
   position: relative;
-  flex: 0 0 auto;
+  width: 100%;
+  flex: 0 0 100%;
+}
+
+.nav-login {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  justify-content: center;
 }
 
 .nav-account-trigger {
-  min-height: 34px;
-  gap: 5px;
-  padding: 3px 5px;
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding: 0 9px;
   border-color: transparent;
   background: transparent;
   cursor: pointer;
@@ -408,31 +428,48 @@ textarea::placeholder {
   display: none;
 }
 
+.nav-account-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nav-account-greeting-name {
+  max-width: 145px;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-account-greeting-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
 .nav-avatar,
 .nav-account-icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
   border: 1px solid rgba(232, 117, 50, 0.4);
   border-radius: 50%;
   background: var(--surface-2);
   color: var(--muted);
   object-fit: cover;
-}
-
-.nav-account-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-account-label {
-  display: none;
+  overflow: hidden;
 }
 
 .nav-account-chevron {
+  flex: 0 0 auto;
   color: var(--muted);
   transition: transform 0.2s ease;
 }
@@ -476,8 +513,42 @@ textarea::placeholder {
   font-size: 11px;
 }
 
-/* My Orders & Sign Out */
-.nav-account-link,
+.nav-account-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  margin-top: 5px;
+  border-radius: 7px;
+  color: #d6d8d1;
+  font-size: 12px;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-account-link svg {
+  display: block;
+  flex: 0 0 15px;
+}
+
+.nav-account-link span {
+  line-height: 1;
+}
+
+.nav-account-link:hover {
+  background: rgba(232, 117, 50, 0.1);
+  color: var(--accent-hover);
+}
+
+.nav-account-dropdown form {
+  margin: 5px 0 0;
+}
+
 .nav-account-signout {
   display: flex;
   align-items: center;
@@ -491,34 +562,19 @@ textarea::placeholder {
   color: #d6d8d1;
   font-size: 12px;
   text-align: left;
-  text-decoration: none;
   transition:
     background 0.2s ease,
     color 0.2s ease;
 }
 
-.nav-account-link {
-  margin-top: 5px;
+.nav-account-label {
+  display: inline;
+  flex: 1;
+  text-align: left;
 }
 
-.nav-account-dropdown form {
-  margin: 0;
-}
-
-.nav-account-link:hover,
 .nav-account-signout:hover {
   background: rgba(232, 117, 50, 0.1);
-  color: var(--accent-hover);
-}
-
-.nav-account-link svg,
-.nav-account-signout svg {
-  flex: 0 0 auto;
-  color: var(--muted);
-}
-
-.nav-account-link:hover svg,
-.nav-account-signout:hover svg {
   color: var(--accent-hover);
 }
 
@@ -1576,6 +1632,14 @@ textarea::placeholder {
   margin-top: 18px;
 }
 
+.summary-card .button {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 /* Checkout Layout */
 .checkout-layout {
   display: grid;
@@ -1597,16 +1661,135 @@ textarea::placeholder {
   accent-color: var(--accent);
 }
 
-.checkout-item {
+/* Checkout Order Summary */
+.checkout-summary {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 10px !important;
+  flex-direction: column;
+  gap: 0;
 }
 
-.checkout-item strong {
+.checkout-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 20px !important;
+  color: var(--foreground) !important;
+  font-size: 13px !important;
+}
+
+.checkout-summary-heading h2 {
+  margin: 0;
+}
+
+.checkout-summary-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.checkout-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 18px !important;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.checkout-items .checkout-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0;
+  padding: 12px 0;
   color: var(--foreground);
+  font-size: 13px !important;
+}
+
+.checkout-item-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.checkout-item-name {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.checkout-item-quantity {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.checkout-items .checkout-item-price {
+  flex: 0 0 auto;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.checkout-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 0 !important;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.checkout-pricing .pricing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.checkout-pricing .pricing-row strong {
+  color: #d4d7d0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.checkout-pricing .pricing-discount,
+.checkout-pricing .pricing-discount strong {
+  color: #65bd87;
+}
+
+.checkout-summary > .pricing-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.checkout-summary > .pricing-total strong {
+  color: var(--accent);
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.checkout-summary-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
 }
 
 /* Sticky Bottom Cart Bar */
@@ -2725,6 +2908,121 @@ textarea::placeholder {
   }
 }
 
+/* Tablet Header (701px–850px) */
+@media (min-width: 701px) and (max-width: 980px) {
+  .nav-wrap {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .nav-actions {
+    justify-self: end;
+    gap: 12px;
+  }
+
+  .mobile-menu-toggle {
+    display: grid;
+  }
+
+  /* Tablet Navigation Dropdown */
+  .mobile-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: grid;
+    gap: 0;
+    padding: 8px 16px 18px;
+    background: #121412;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    z-index: 101;
+  }
+
+  .mobile-nav-account {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 5px 16px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-nav-avatar,
+  .mobile-nav-avatar-fallback {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border: 1px solid rgba(232, 117, 50, 0.4);
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .mobile-nav-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-2);
+    color: var(--foreground);
+  }
+
+  .mobile-nav-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .mobile-nav-user-name {
+    overflow: hidden;
+    color: var(--foreground);
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-nav-user-status {
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .mobile-nav a,
+  .mobile-nav button {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 5px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: #d6d8d1;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .mobile-nav a:hover,
+  .mobile-nav button:hover {
+    color: var(--accent);
+  }
+
+  .mobile-nav-orders {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mobile-nav-orders svg {
+    flex: 0 0 auto;
+    color: var(--accent);
+  }
+}
+
 /* Tablet Portrait (<= 768px) */
 @media (max-width: 768px) {
   .auth-wrap {
@@ -2755,8 +3053,10 @@ textarea::placeholder {
 
   /* Header & Mobile Navigation */
   .nav-wrap {
-    min-height: 68px;
-    gap: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
   }
 
   .header-logo {
@@ -2768,11 +3068,16 @@ textarea::placeholder {
   }
 
   .nav-login,
-  .nav-account {
+  .nav-account,
+  .nav-account-slot {
     display: none;
   }
 
   .nav-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
     gap: 12px;
     margin-left: auto;
   }
@@ -2790,11 +3095,16 @@ textarea::placeholder {
   }
 
   .mobile-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     display: grid;
     gap: 0;
     padding: 8px 16px 18px;
     background: #121412;
     border-top: 1px solid var(--border);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
   }
 
   /* Signed-In Identity in Mobile Navigation */
@@ -2802,7 +3112,7 @@ textarea::placeholder {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 5px 14px;
+    padding: 14px 5px 16px;
     margin-bottom: 6px;
     border-bottom: 1px solid var(--border);
   }
@@ -2833,21 +3143,25 @@ textarea::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border: 1px solid rgba(232, 117, 50, 0.4);
+    border-radius: 50%;
     background: var(--surface-2);
-    color: var(--muted);
+    color: var(--foreground);
   }
-
   .mobile-nav-user-info {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
 
   .mobile-nav-user-name {
     overflow: hidden;
     color: var(--foreground);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;

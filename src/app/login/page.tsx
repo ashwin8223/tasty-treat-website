@@ -3,18 +3,88 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { signInAction } from "../_lib/actions";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { login, loginWithGoogle, signup } from "../_lib/apiAuth";
 
 export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isSignUp = activeTab === "signup";
 
+  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/menu";
+
+  async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+
+    const email = formData.get("email")?.toString().trim() || "";
+    const password = formData.get("password")?.toString() || "";
+
+    try {
+      setIsLoading(true);
+
+      if (isSignUp) {
+        const fullName = formData.get("fullName")?.toString().trim() || "";
+        const confirmPassword =
+          formData.get("confirmPassword")?.toString() || "";
+
+        if (password !== confirmPassword) {
+          toast.error("Passwords do not match.");
+          return;
+        }
+
+        const { session } = await signup({
+          fullName,
+          email,
+          password,
+        });
+
+        if (!session) {
+          toast.success(
+            "Account created! Please check your email to verify your account.",
+          );
+          setActiveTab("signin");
+          return;
+        }
+
+        toast.success("Account created successfully!");
+        router.replace(callbackUrl);
+        router.refresh();
+        return;
+      }
+
+      await login({ email, password });
+
+      toast.success("Welcome back!");
+      router.replace(callbackUrl);
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    try {
+      setIsLoading(true);
+      await loginWithGoogle(callbackUrl);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Google login failed.",
+      );
+      setIsLoading(false);
+    }
+  }
 
   return (
     <section className="auth-wrap">
@@ -37,6 +107,7 @@ export default function LoginPage() {
             type="button"
             className={!isSignUp ? "active" : ""}
             onClick={() => setActiveTab("signin")}
+            disabled={isLoading}
           >
             Sign In
           </button>
@@ -45,12 +116,13 @@ export default function LoginPage() {
             type="button"
             className={isSignUp ? "active" : ""}
             onClick={() => setActiveTab("signup")}
+            disabled={isLoading}
           >
             Sign Up
           </button>
         </div>
 
-        <form className="auth-form">
+        <form className="auth-form" onSubmit={handleSubmit}>
           {isSignUp && (
             <label>
               Full name
@@ -129,8 +201,16 @@ export default function LoginPage() {
             </div>
           )}
 
-          <button className="button button-primary button-wide" type="submit">
-            {isSignUp ? "Create Account" : "Sign In"}
+          <button
+            className="button button-primary button-wide"
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading
+              ? "Please wait..."
+              : isSignUp
+                ? "Create Account"
+                : "Sign In"}
           </button>
         </form>
 
@@ -140,24 +220,27 @@ export default function LoginPage() {
           <span />
         </div>
 
-        <form action={signInAction}>
-          <input type="hidden" name="callbackUrl" value={callbackUrl} />
-          <button type="submit" className="google-auth-button">
-            <Image
-              src="https://authjs.dev/img/providers/google.svg"
-              alt="Google logo"
-              height="16"
-              width="16"
-            />
-            <span>Continue with Google</span>
-          </button>
-        </form>
+        <button
+          type="button"
+          className="google-auth-button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+        >
+          <Image
+            src="https://authjs.dev/img/providers/google.svg"
+            alt="Google logo"
+            height="16"
+            width="16"
+          />
+          <span>Continue with Google</span>
+        </button>
 
         <div className="auth-foot">
           {isSignUp ? "Already have an account?" : "New to Tasty Treat?"}
           <button
             type="button"
             onClick={() => setActiveTab(isSignUp ? "signin" : "signup")}
+            disabled={isLoading}
           >
             {isSignUp ? "Sign In" : "Create an account"}
           </button>

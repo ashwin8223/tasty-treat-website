@@ -84,9 +84,7 @@ export function MenuCard({ item }: { item: MenuItem }) {
 
       <div className="menu-card-info">
         <div>
-          <span className="menu-card-category">
-            {item.categories?.cuisines?.name} · {item.categories?.name}
-          </span>
+          <span className="menu-card-category">{item.categories?.name}</span>
           <h3>{item.name}</h3>
         </div>
 

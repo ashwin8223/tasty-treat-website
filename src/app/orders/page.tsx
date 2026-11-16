@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import { auth } from "../_lib/auth";
+import { createClient as createSupabaseServerClient } from "../_lib/supabase-server";
 import { supabase } from "../_lib/supabase";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -28,10 +28,28 @@ function formatStatus(status: string) {
 }
 
 export default async function OrdersPage() {
-  const session = await auth();
+  // Verify the authenticated Supabase user.
+  const supabaseServer = await createSupabaseServerClient();
 
-  if (!session?.user?.customerId) {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabaseServer.auth.getUser();
+
+  if (authError || !user) {
     redirect("/login");
+  }
+
+  // Retrieve the existing customer record linked to this user.
+  const { data: customer, error: customerError } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("authUserId", user.id)
+    .single();
+
+  if (customerError || !customer) {
+    console.error("Customer lookup failed:", customerError);
+    throw new Error("Unable to retrieve your customer account.");
   }
 
   const { data: orders, error: ordersError } = await supabase
@@ -39,7 +57,7 @@ export default async function OrdersPage() {
     .select(
       "id, created_at, orderNumber, status, paymentMethod, paymentStatus, totalAmount",
     )
-    .eq("customerId", session.user.customerId)
+    .eq("customerId", customer.id)
     .order("created_at", { ascending: false });
 
   if (ordersError) {

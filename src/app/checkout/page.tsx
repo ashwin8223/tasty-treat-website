@@ -1,13 +1,21 @@
 import CheckoutForm from "../_components/CheckoutForm";
-import { auth } from "../_lib/auth";
+import { createClient } from "../_lib/supabase-server";
+import { getRestaurantSettings } from "../_lib/data-service";
 import { redirect } from "next/navigation";
 
 export default async function CheckoutPage() {
-  const session = await auth();
+  const supabase = await createClient();
 
-  if (!session?.user?.customerId || !session.user.email) {
-    redirect("/login");
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user || !user.email) {
+    redirect("/login?callbackUrl=%2Fcheckout");
   }
 
-  return <CheckoutForm email={session.user.email} />;
+  const settings = await getRestaurantSettings();
+
+  return <CheckoutForm email={user.email} settings={settings} />;
 }

@@ -1,17 +1,22 @@
-import { auth } from "../_lib/auth";
+import { createClient } from "../_lib/supabase-server";
 import { HeaderClient } from "./HeaderClient";
 
 export async function Header() {
-  const session = await auth();
+  const supabase = await createClient();
 
-  console.log("Google session image:", session?.user?.image);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const user = session?.user
+  const userMetadata = user?.user_metadata;
+
+  const userInfo = user
     ? {
-        name: session.user.name ?? null,
-        image: session.user.image ?? null,
+        name:
+          userMetadata?.fullName ?? userMetadata?.name ?? user.email ?? null,
+        image: userMetadata?.avatar_url ?? userMetadata?.picture ?? null,
       }
     : null;
 
-  return <HeaderClient user={user} />;
+  return <HeaderClient user={userInfo} />;
 }
