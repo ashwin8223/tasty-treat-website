@@ -17,6 +17,8 @@ type CheckoutDetails = {
   phone: string;
   city: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   orderNotes: string;
   payment: "cod" | "online";
 };
@@ -28,6 +30,9 @@ function validateCheckoutDetails(formData: FormData): CheckoutDetails {
   const address = String(formData.get("address") ?? "").trim();
   const orderNotes = String(formData.get("orderNotes") ?? "").trim();
   const payment = formData.get("payment");
+
+  const latitudeValue = String(formData.get("latitude") ?? "").trim();
+  const longitudeValue = String(formData.get("longitude") ?? "").trim();
 
   if (fullName.length < 2) {
     throw new Error("Please enter a valid full name");
@@ -51,11 +56,40 @@ function validateCheckoutDetails(formData: FormData): CheckoutDetails {
     throw new Error("Order notes cannot exceed 500 characters");
   }
 
+  // Coordinates are optional for customers using manual address entry.
+  const hasLatitude = latitudeValue !== "";
+  const hasLongitude = longitudeValue !== "";
+
+  if (hasLatitude !== hasLongitude) {
+    throw new Error("Please select a valid delivery location");
+  }
+
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+
+  if (hasLatitude && hasLongitude) {
+    latitude = Number(latitudeValue);
+    longitude = Number(longitudeValue);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      throw new Error("Please select a valid delivery location");
+    }
+  }
+
   return {
     fullName,
     phone,
     city,
     address,
+    latitude,
+    longitude,
     orderNotes,
     payment,
   };
@@ -154,6 +188,8 @@ export async function createOrder(orderData: OrderData, formData: FormData) {
       discount,
       totalAmount,
       deliveryAddress: `${checkoutDetails.address}, ${checkoutDetails.city}`,
+      deliveryLatitude: checkoutDetails.latitude,
+      deliveryLongitude: checkoutDetails.longitude,
       customerNotes: checkoutDetails.orderNotes || null,
     })
     .select("id, orderNumber")

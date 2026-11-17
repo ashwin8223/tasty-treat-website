@@ -153,18 +153,16 @@ export function HeaderClient({ user }: HeaderClientProps) {
                     <Image
                       src={user.image}
                       alt=""
-                      width={28}
-                      height={28}
+                      width={34}
+                      height={34}
                       unoptimized
                       className="nav-avatar"
                     />
                   ) : (
                     <span className="nav-account-icon">
-                      <UserRound size={17} />
+                      <UserRound size={15} />
                     </span>
                   )}
-
-                  <span className="nav-account-label">My Account</span>
 
                   <ChevronDown
                     size={13}

@@ -1,11 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { useCart } from "./cart-provider";
 import { createOrder } from "../_lib/actions";
 import type { RestaurantSettings } from "../_lib/data-service";
+
+const DeliveryLocationPicker = dynamic(
+  () => import("./DeliveryLocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="delivery-map-loading">Loading delivery map...</div>
+    ),
+  },
+);
 
 type CheckoutFormProps = {
   email: string;
@@ -27,6 +38,11 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const [deliveryLocation, setDeliveryLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
   const orderData = {
     items: lines.map(({ item, quantity }) => ({
       id: item.id,
@@ -36,7 +52,6 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
 
   const createOrderWithData = createOrder.bind(null, orderData);
 
-  // Calculate checkout pricing using the restaurant settings.
   const tax =
     Math.round((subtotal * settings.taxRate + Number.EPSILON) * 100) / 100;
 
@@ -136,9 +151,32 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
       </h1>
 
       <div className="checkout-layout">
-        {/* Delivery and payment form */}
         <form className="surface-form" onSubmit={handleSubmit} noValidate>
-          <h2>Delivery details</h2>
+          <div className="checkout-location-section">
+            <DeliveryLocationPicker
+              onLocationSelect={(latitude, longitude) => {
+                setDeliveryLocation({ latitude, longitude });
+              }}
+            />
+
+            <input
+              type="hidden"
+              name="latitude"
+              value={deliveryLocation?.latitude ?? ""}
+            />
+
+            <input
+              type="hidden"
+              name="longitude"
+              value={deliveryLocation?.longitude ?? ""}
+            />
+          </div>
+
+          <div className="form-heading checkout-section-heading checkout-customer-heading">
+            <div>
+              <h2>Contact details</h2>
+            </div>
+          </div>
 
           <div className="form-grid">
             <label>
@@ -212,16 +250,20 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             </label>
 
             <label className="full-field">
-              Order notes
+              Delivery instructions (optional)
               <textarea
                 name="orderNotes"
                 rows={3}
-                placeholder="Delivery instructions (optional)"
+                placeholder="Anything we should know?"
               />
             </label>
           </div>
 
-          <h3 className="subheading">Payment method</h3>
+          <div className="form-heading checkout-section-heading checkout-payment-heading">
+            <div>
+              <h2>Payment</h2>
+            </div>
+          </div>
 
           <label className="radio-row">
             <input type="radio" name="payment" value="cod" defaultChecked />
@@ -260,14 +302,12 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
           </p>
         </form>
 
-        {/* Order summary and detailed pricing */}
         <aside className="summary-card checkout-summary">
           <div className="checkout-summary-heading">
             <h2>Your order</h2>
             <span>{lines.length} items</span>
           </div>
 
-          {/* Individual order items */}
           <div className="checkout-items">
             {lines.map(({ item, quantity }) => (
               <div className="checkout-item" key={item.id}>
@@ -285,7 +325,6 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             ))}
           </div>
 
-          {/* Detailed price breakdown */}
           <div className="checkout-pricing">
             <div className="pricing-row">
               <span>Subtotal</span>
@@ -310,15 +349,10 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             )}
           </div>
 
-          {/* Final payable amount */}
           <div className="pricing-row pricing-total">
             <span>Total</span>
             <strong>${total.toFixed(2)}</strong>
           </div>
-
-          <p className="checkout-summary-note">
-            Your order total includes applicable delivery charges and taxes.
-          </p>
         </aside>
       </div>
     </section>
