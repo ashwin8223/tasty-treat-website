@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -11,8 +11,18 @@ import {
 import L, { type LatLngExpression } from "leaflet";
 import { LocateFixed, MapPin } from "lucide-react";
 
+type DeliveryLocationSelection = {
+  latitude: number;
+  longitude: number;
+  addressLine?: string;
+  city?: string;
+  formattedAddress?: string;
+  isResolvingAddress?: boolean;
+  addressError?: string;
+};
+
 type DeliveryLocationPickerProps = {
-  onLocationSelect: (latitude: number, longitude: number) => void;
+  onLocationSelect: (location: DeliveryLocationSelection) => void;
 };
 
 type Position = {
@@ -20,27 +30,29 @@ type Position = {
   longitude: number;
 };
 
-// Custom marker avoids Leaflet's default image-path issues with Next.js.
+type PhotonFeature = {
+  properties?: {
+    name?: string;
+    housenumber?: string;
+    street?: string;
+    district?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+};
+
+// CSS-based marker keeps the marker's appearance in the stylesheet.
 const deliveryMarkerIcon = L.divIcon({
   className: "delivery-map-marker",
-  html: `
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="40"
-      height="48"
-      viewBox="0 0 40 48"
-      style="display:block;overflow:visible"
-    >
-      <path
-        d="M20 46C20 46 3 27.5 3 19C3 9.6 10.6 2 20 2C29.4 2 37 9.6 37 19C37 27.5 20 46 20 46Z"
-        fill="#E87532"
-        stroke="#FFFFFF"
-        stroke-width="2.5"
-      />
-      <circle cx="20" cy="19" r="7" fill="#FFFFFF" />
-      <circle cx="20" cy="19" r="3" fill="#E87532" />
-    </svg>
-  `,
+  html: '<span class="delivery-map-marker__pin" aria-hidden="true"></span>',
   iconSize: [40, 48],
   iconAnchor: [20, 48],
 });
@@ -75,17 +87,150 @@ function MapClickHandler({
   return null;
 }
 
+function uniqueParts(parts: Array<string | undefined>) {
+  return [...new Set(parts.map((part) => part?.trim()).filter(Boolean))];
+}
+
+async function reverseGeocode(
+  latitude: number,
+  longitude: number,
+  signal: AbortSignal,
+): Promise<
+  Pick<DeliveryLocationSelection, "addressLine" | "city" | "formattedAddress">
+> {
+  const query = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+    lang: "en",
+  });
+
+  // Photon provides OpenStreetMap-based reverse geocoding without a client API key.
+  const response = await fetch(
+    `https://photon.komoot.io/reverse?${query.toString()}`,
+    {
+      signal,
+      headers: { Accept: "application/json" },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Address lookup is temporarily unavailable.");
+  }
+
+  const result = (await response.json()) as { features?: PhotonFeature[] };
+  const properties = result.features?.[0]?.properties;
+
+  if (!properties) {
+    throw new Error("No address details were found for this map point.");
+  }
+
+  const street = uniqueParts([properties.housenumber, properties.street]).join(
+    " ",
+  );
+
+  const neighbourhood =
+    properties.suburb ?? properties.neighbourhood ?? properties.district;
+
+  const city =
+    properties.city ??
+    properties.town ??
+    properties.village ??
+    properties.municipality ??
+    properties.county ??
+    "";
+
+  const addressLine = uniqueParts([
+    street || properties.name,
+    neighbourhood,
+    properties.postcode,
+  ]).join(", ");
+
+  const formattedAddress = uniqueParts([
+    addressLine || properties.name,
+    city,
+    properties.state,
+    properties.country,
+  ]).join(", ");
+
+  return {
+    addressLine: addressLine || formattedAddress,
+    city,
+    formattedAddress,
+  };
+}
+
 export default function DeliveryLocationPicker({
   onLocationSelect,
 }: DeliveryLocationPickerProps) {
   const [position, setPosition] = useState<Position | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [error, setError] = useState("");
+  const [addressStatus, setAddressStatus] = useState("");
+  const lookupController = useRef<AbortController | null>(null);
 
-  function handleLocationSelect(latitude: number, longitude: number) {
-    setPosition({ latitude, longitude });
+  useEffect(() => {
+    return () => lookupController.current?.abort();
+  }, []);
+
+  async function handleLocationSelect(latitude: number, longitude: number) {
+    const nextPosition = { latitude, longitude };
+    setPosition(nextPosition);
     setError("");
-    onLocationSelect(latitude, longitude);
+    setAddressStatus("Finding address details...");
+    setIsResolvingAddress(true);
+
+    lookupController.current?.abort();
+    const controller = new AbortController();
+    lookupController.current = controller;
+
+    // Send coordinates immediately so they are retained even if address lookup fails.
+    onLocationSelect({
+      ...nextPosition,
+      addressLine: "",
+      city: "",
+      formattedAddress: "",
+      isResolvingAddress: true,
+    });
+
+    try {
+      const address = await reverseGeocode(
+        latitude,
+        longitude,
+        controller.signal,
+      );
+
+      if (controller.signal.aborted) return;
+
+      setAddressStatus(
+        address.formattedAddress
+          ? `Address found: ${address.formattedAddress}`
+          : "Address details found.",
+      );
+      onLocationSelect({
+        ...nextPosition,
+        ...address,
+        isResolvingAddress: false,
+      });
+    } catch (lookupError) {
+      if (controller.signal.aborted) return;
+
+      const message =
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Unable to find address details for this point.";
+
+      setAddressStatus("Could not retrieve the address. Enter it manually.");
+      onLocationSelect({
+        ...nextPosition,
+        isResolvingAddress: false,
+        addressError: message,
+      });
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsResolvingAddress(false);
+      }
+    }
   }
 
   function handleCurrentLocation() {
@@ -99,7 +244,7 @@ export default function DeliveryLocationPicker({
 
     navigator.geolocation.getCurrentPosition(
       (location) => {
-        handleLocationSelect(
+        void handleLocationSelect(
           location.coords.latitude,
           location.coords.longitude,
         );
@@ -145,7 +290,7 @@ export default function DeliveryLocationPicker({
         </button>
       </div>
 
-      <div className="delivery-map-wrapper" style={{ position: "relative" }}>
+      <div className="delivery-map-wrapper">
         <MapContainer
           center={defaultPosition}
           zoom={12}
@@ -171,7 +316,7 @@ export default function DeliveryLocationPicker({
                   const marker = event.target;
                   const coordinates = marker.getLatLng();
 
-                  handleLocationSelect(coordinates.lat, coordinates.lng);
+                  void handleLocationSelect(coordinates.lat, coordinates.lng);
                 },
               }}
             />
@@ -179,40 +324,24 @@ export default function DeliveryLocationPicker({
         </MapContainer>
 
         {!position && (
-          <div
-            className="delivery-map-hint"
-            style={{
-              position: "absolute",
-              left: "50%",
-              bottom: "14px",
-              transform: "translateX(-50%)",
-              zIndex: 1000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "7px",
-              width: "max-content",
-              maxWidth: "calc(100% - 24px)",
-              padding: "10px 14px",
-              borderRadius: "999px",
-              border: "1px solid rgba(255, 255, 255, 0.22)",
-              background: "rgba(24, 24, 27, 0.88)",
-              color: "#FFFFFF",
-              fontSize: "13px",
-              fontWeight: 600,
-              lineHeight: 1.2,
-              textAlign: "center",
-              boxShadow: "0 3px 12px rgba(0, 0, 0, 0.28)",
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
-              pointerEvents: "none",
-            }}
-          >
+          <div className="delivery-map-hint">
             <MapPin size={14} aria-hidden="true" />
             <span>Tap map to place pin</span>
           </div>
         )}
       </div>
+
+      {isResolvingAddress && (
+        <p className="form-note" aria-live="polite">
+          Finding the address for your selected point...
+        </p>
+      )}
+
+      {!isResolvingAddress && addressStatus && (
+        <p className="form-note" aria-live="polite">
+          {addressStatus}
+        </p>
+      )}
 
       {error && (
         <p className="field-error" role="alert">

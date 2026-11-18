@@ -10,6 +10,7 @@ import {
   UserRound,
   ChevronDown,
   PackageCheck,
+  LayoutDashboard,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -43,7 +44,6 @@ export function HeaderClient({ user }: HeaderClientProps) {
 
   const displayName = user?.name?.trim() || "there";
 
-  // Close the desktop account dropdown on outside click or Escape.
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
       if (
@@ -178,6 +178,18 @@ export function HeaderClient({ user }: HeaderClientProps) {
                   </div>
 
                   <Link
+                    href="/account"
+                    className="nav-account-link"
+                    onClick={closeMenus}
+                    aria-current={
+                      pathname.startsWith("/account") ? "page" : undefined
+                    }
+                  >
+                    <LayoutDashboard size={15} />
+                    <span>My Account</span>
+                  </Link>
+
+                  <Link
                     href="/orders"
                     className="nav-account-link"
                     onClick={closeMenus}
@@ -245,14 +257,28 @@ export function HeaderClient({ user }: HeaderClientProps) {
           )}
 
           {user && (
-            <Link
-              href="/orders"
-              className="mobile-nav-orders"
-              onClick={() => setOpen(false)}
-            >
-              <PackageCheck size={17} />
-              <span>My Orders</span>
-            </Link>
+            <>
+              <Link
+                href="/account"
+                className="mobile-nav-orders"
+                onClick={() => setOpen(false)}
+                aria-current={
+                  pathname.startsWith("/account") ? "page" : undefined
+                }
+              >
+                <LayoutDashboard size={17} />
+                <span>My Account</span>
+              </Link>
+
+              <Link
+                href="/orders"
+                className="mobile-nav-orders"
+                onClick={() => setOpen(false)}
+              >
+                <PackageCheck size={17} />
+                <span>My Orders</span>
+              </Link>
+            </>
           )}
 
           {links.map((link) => (

@@ -42,6 +42,8 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [city, setCity] = useState("");
+  const [address, setAddress] = useState("");
 
   const orderData = {
     items: lines.map(({ item, quantity }) => ({
@@ -154,8 +156,25 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
         <form className="surface-form" onSubmit={handleSubmit} noValidate>
           <div className="checkout-location-section">
             <DeliveryLocationPicker
-              onLocationSelect={(latitude, longitude) => {
-                setDeliveryLocation({ latitude, longitude });
+              onLocationSelect={(location) => {
+                setDeliveryLocation({
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                });
+
+                // Do not clear manually entered values while reverse geocoding
+                // is still in progress or when the lookup cannot find an address.
+                if (location.isResolvingAddress) return;
+
+                if (location.city) {
+                  setCity(location.city);
+                  handleFieldChange("city");
+                }
+
+                if (location.addressLine) {
+                  setAddress(location.addressLine);
+                  handleFieldChange("address");
+                }
               }}
             />
 
@@ -226,8 +245,12 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
                 name="city"
                 required
                 placeholder="City"
+                value={city}
                 aria-invalid={!!errors.city}
-                onChange={() => handleFieldChange("city")}
+                onChange={(event) => {
+                  setCity(event.target.value);
+                  handleFieldChange("city");
+                }}
               />
               {errors.city && (
                 <span className="field-error">{errors.city}</span>
@@ -241,8 +264,12 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
                 required
                 rows={3}
                 placeholder="Street, building, apartment..."
+                value={address}
                 aria-invalid={!!errors.address}
-                onChange={() => handleFieldChange("address")}
+                onChange={(event) => {
+                  setAddress(event.target.value);
+                  handleFieldChange("address");
+                }}
               />
               {errors.address && (
                 <span className="field-error">{errors.address}</span>
