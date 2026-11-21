@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Play } from "lucide-react";
+import { ArrowUpRight, Play } from "lucide-react";
+import { ScrollToExploreButton } from "./ScrollToExploreButton";
 
 export function Hero() {
   return (
@@ -42,6 +43,7 @@ export function Hero() {
           >
             Explore menu <ArrowUpRight size={17} />
           </Link>
+
           <Link
             href="/reservations"
             className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-white/35 bg-black/18 px-5.25 text-[13px] font-bold text-white transition-[transform,background-color] duration-200 hover:-translate-y-0.5"
@@ -54,9 +56,8 @@ export function Hero() {
           <span className="inline-flex items-center gap-2">
             <Play size={13} fill="currentColor" /> A little taste of Tasty Treat
           </span>
-          <span className="inline-flex items-center gap-2">
-            SCROLL TO EXPLORE <ArrowDown size={14} />
-          </span>
+
+          <ScrollToExploreButton />
         </div>
       </div>
 

@@ -115,7 +115,7 @@ export function HeaderClient({ user }: HeaderClientProps) {
             alt="Tasty Treat – A World of Global Flavors"
             width={1024}
             height={512}
-            priority
+            loading="eager"
             className="block h-auto w-45 shrink-0 object-contain max-[1100px]:w-38.75 max-[700px]:w-36.25 max-[360px]:w-31.25"
           />
         </Link>

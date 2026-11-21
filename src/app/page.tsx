@@ -13,7 +13,10 @@ export default async function HomePage() {
     <>
       <Hero />
 
-      <section className="mx-auto w-[min(1160px,calc(100%-48px))] py-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-17">
+      <section
+        id="explore-section"
+        className="mx-auto w-[min(1160px,calc(100%-48px))] py-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-17"
+      >
         <div className="mb-8.75 flex items-end justify-between gap-7.5 max-[700px]:block">
           <SectionTitle
             eyebrow="A LITTLE SOMETHING FOR EVERYONE"

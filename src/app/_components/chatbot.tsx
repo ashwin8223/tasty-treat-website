@@ -1,27 +1,15 @@
 "use client";
 
-import {
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  ArrowUpRight,
-  Bot,
-  MessageCircle,
-  Send,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import type { MenuItem } from "../_lib/data-service";
 import { useCart } from "./cart-provider";
+import Image from "next/image";
 
-// Hydration-safe mount check for rendering the chatbot through a portal.
+// Hydration-safe check that allows the chatbot to render through a portal
+// only after the component has mounted in the browser.
 function subscribeToMount() {
   return () => {};
 }
@@ -47,556 +35,530 @@ type Message = {
   items?: MenuItem[];
 };
 
-type CartContextSnapshot = {
-  count: number;
-  subtotal: number;
-  itemNames: string[];
-};
-
-type BotResponse = {
-  content: string;
-  links?: ChatLink[];
-  items?: MenuItem[];
-};
-
-const ROUTES = {
-  menu: { label: "Explore Menu", href: "/menu" },
-  cart: { label: "View Cart", href: "/cart" },
-  checkout: { label: "Go to Checkout", href: "/checkout" },
-  orders: { label: "My Orders", href: "/orders" },
-  reservations: { label: "Book a Table", href: "/reservations" },
-  account: { label: "My Account", href: "/account" },
-  login: { label: "Sign In", href: "/login" },
-  forgotPassword: { label: "Reset Password", href: "/forgot-password" },
-  about: { label: "Our Story", href: "/about" },
-  contact: { label: "Contact Us", href: "/contact" },
-} as const satisfies Record<string, ChatLink>;
-
 const suggestedQuestions = [
-  "Recommend something popular",
-  "Veg dishes under $15",
-  "Book a table",
-  "Track my order",
+  "What can I order?",
+  "How do I place an order?",
+  "How can I track my order?",
 ];
 
-const STOP_WORDS = new Set([
-  "a",
-  "an",
-  "the",
-  "is",
-  "are",
-  "do",
-  "you",
-  "have",
-  "any",
-  "some",
-  "me",
-  "for",
-  "to",
-  "of",
-  "in",
-  "on",
-  "at",
-  "with",
-  "what",
-  "whats",
-  "tell",
-  "about",
-  "show",
-  "find",
-  "give",
-  "can",
-  "i",
-  "get",
-  "order",
-  "eat",
-  "want",
-  "like",
-  "please",
-  "dish",
-  "dishes",
-  "food",
-  "menu",
-  "item",
-  "items",
-  "price",
-  "much",
-  "how",
-  "cost",
-  "ingredients",
-  "contain",
-  "contains",
-  "recommend",
-  "suggest",
-  "good",
-  "best",
-  "popular",
-  "something",
-  "anything",
-]);
+const chatbotLinks: ChatLink[] = [
+  { label: "Explore Menu", href: "/menu" },
+  { label: "View Cart", href: "/cart" },
+  { label: "Checkout", href: "/checkout" },
+  { label: "My Orders", href: "/orders" },
+  { label: "Contact Us", href: "/contact" },
+];
 
-function normalize(text: string) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s$₹]/g, " ")
-    .replace(/\s+/g, " ");
-}
-
-function matchesAny(query: string, patterns: RegExp[]) {
+function matchesPatterns(query: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(query));
 }
 
-function formatPrice(amount: number) {
-  return `$${amount.toFixed(2)}`;
+function getBotReply(message: string): string {
+  const query = message
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ");
+
+  const matches = (patterns: RegExp[]) => matchesPatterns(query, patterns);
+
+  // Greetings and conversation basics.
+  if (
+    matches([
+      /^(hi|hello|hey|greetings)$/,
+      /^(good morning|good afternoon|good evening)$/,
+      /^(hi|hello|hey) there$/,
+      /^(howdy|what s up)$/,
+    ])
+  ) {
+    return "Hey! Welcome to Tasty Treat 😊 What are you in the mood for today? I can help you find something to eat, understand how ordering works, or point you to the right place on the site.";
+  }
+
+  if (
+    matches([
+      /\b(who are you|what are you|introduce yourself)\b/,
+      /\b(what can you do|how can you help)\b/,
+    ])
+  ) {
+    return "I'm Tasty Assistant, the helper here at Tasty Treat. I can help you explore the menu, find dishes that fit your preferences, explain how to order, and point you towards your cart or orders. What would you like to do?";
+  }
+
+  if (
+    matches([
+      /^(thanks|thank you|thank you so much)$/,
+      /\b(thanks for your help|that helps|very helpful)\b/,
+    ])
+  ) {
+    return "You're welcome! Glad I could help. If anything else comes up while you're browsing, just ask.";
+  }
+
+  if (matches([/^(bye|goodbye|see you|see you later)$/])) {
+    return "See you later! Thanks for stopping by Tasty Treat. Hope you find something delicious for your next meal!";
+  }
+
+  // Menu discovery and food preferences.
+  if (
+    matches([
+      /\b(menu|food menu|food options|what do you serve|what do you have)\b/,
+      /\b(show|see|view|browse|explore)\s+(the\s+)?menu\b/,
+      /\b(what can i eat|what can i order)\b/,
+    ])
+  ) {
+    return "Of course! Have a look through our menu to see what's available. If you tell me what you're craving, your dietary preference, or roughly how much you'd like to spend, I can narrow down some options for you.";
+  }
+
+  if (
+    matches([
+      /\b(vegetarian|veg food|veg dishes|pure veg)\b/,
+      /\b(do you have veg|show veg|vegetarian options)\b/,
+    ])
+  ) {
+    return "Absolutely. If you're looking for vegetarian food, I can help narrow down the available dishes. Do you have a particular category in mind, such as starters, pizza, pasta, or dessert?";
+  }
+
+  if (
+    matches([
+      /\b(non vegetarian|non veg|nonveg|meat dishes)\b/,
+      /\b(do you have non veg|show non veg)\b/,
+    ])
+  ) {
+    return "Sure! I can look for non-vegetarian options in the menu. Are you in the mood for a particular type of dish, or would you like to see a few options?";
+  }
+
+  if (
+    matches([
+      /\b(ingredients|what is in|what s in|contain|contains)\b/,
+      /\b(allergy|allergic|allergen|food allergy)\b/,
+    ])
+  ) {
+    return "The menu descriptions may help with general ingredient information. If this is about an allergy, please don't rely on the chatbot to confirm whether a dish is safe. Contact the restaurant team before ordering so they can check the ingredients and preparation process with you.";
+  }
+
+  if (
+    matches([
+      /\b(spicy|spice level|hot food|mild food|less spicy)\b/,
+      /\b(not spicy|no spice)\b/,
+    ])
+  ) {
+    return "Got it — spice level matters. Check the dish description for any details provided, and if you need a dish to be mild or have a specific spice requirement, please confirm with the restaurant team before ordering.";
+  }
+
+  // Cart and ordering journey.
+  if (
+    matches([
+      /\b(how to order|how do i order|place an order|ordering process)\b/,
+      /\b(how can i buy|how can i purchase)\b/,
+    ])
+  ) {
+    return "It's straightforward: browse the menu, add the dishes you want to your cart, and open your cart to review everything. When you're ready, continue to checkout, enter your delivery details, and follow the payment options shown there.";
+  }
+
+  if (
+    matches([
+      /\b(add to cart|add item|add food|add dish)\b/,
+      /\b(how do i add|how can i add)\b/,
+    ])
+  ) {
+    return "You can add a dish from its menu card using the Add to Cart button. If I've shown you a recommendation here, you can add it directly from that card too.";
+  }
+
+  if (
+    matches([
+      /\b(view cart|open cart|my cart|shopping cart)\b/,
+      /\b(cart items|items in cart|cart contents)\b/,
+    ])
+  ) {
+    return "You can review your selected dishes in your cart. From there, you can check the quantities, update or remove items, and continue to checkout whenever you're ready.";
+  }
+
+  if (
+    matches([
+      /\b(remove from cart|delete from cart|clear cart|empty cart)\b/,
+      /\b(change quantity|update quantity|increase quantity|decrease quantity)\b/,
+    ])
+  ) {
+    return "Open your cart to manage the items you've selected. You can adjust quantities or remove dishes before moving on to checkout.";
+  }
+
+  if (
+    matches([
+      /\b(checkout|check out|proceed to payment|place my order)\b/,
+      /\b(complete my order|finish my order)\b/,
+    ])
+  ) {
+    return "When you're ready, head to checkout from your cart. Review your order, add your delivery details, and choose from the payment methods available there before confirming.";
+  }
+
+  // Delivery information.
+  if (
+    matches([
+      /\b(delivery address|change address|address details|where do you deliver)\b/,
+      /\b(add my address|update my address)\b/,
+    ])
+  ) {
+    return "You can enter your delivery address during checkout. Take a moment to check the address and contact details before placing the order so the team has the right information.";
+  }
+
+  if (
+    matches([/\b(minimum order|minimum amount|min order|minimum purchase)\b/])
+  ) {
+    return "I don't want to guess at the minimum order amount because it can depend on the current setup. Please check the cart or checkout page for the requirement that applies to your order.";
+  }
+
+  if (
+    matches([
+      /\b(delivery fee|delivery charge|shipping fee|delivery cost)\b/,
+      /\b(is delivery free|free delivery)\b/,
+    ])
+  ) {
+    return "Any delivery charge that applies should be shown during checkout before you confirm the order. That's the best place to check the amount for your delivery.";
+  }
+
+  if (
+    matches([
+      /\b(delivery area|delivery locations|delivery zone|deliver to my area)\b/,
+      /\b(available in my area|do you deliver to)\b/,
+    ])
+  ) {
+    return "Delivery availability depends on the address. Enter your location during checkout to see whether delivery is available for your area.";
+  }
+
+  if (
+    matches([
+      /\b(delivery time|how long|when will.*arrive|when.*delivered)\b/,
+      /\b(estimated delivery|delivery duration|waiting time)\b/,
+    ])
+  ) {
+    return "Delivery time can vary with the destination and order conditions. Please check the estimate shown during checkout, if one is provided, for the most relevant information.";
+  }
+
+  if (
+    matches([
+      /\b(delivery rider|delivery person|driver|rider details)\b/,
+      /\b(contact rider|rider contact)\b/,
+    ])
+  ) {
+    return "If you need help with an ongoing delivery, check the order details in My Orders first. If the information there doesn't answer your question, contact the support team for assistance.";
+  }
+
+  // Payments and refunds.
+  if (
+    matches([
+      /\b(payment methods|how can i pay|payment options|ways to pay)\b/,
+      /\b(accepted payments|payment types)\b/,
+    ])
+  ) {
+    return "The payment methods supported for your order will be listed at checkout. You can review the available options there before confirming.";
+  }
+
+  if (matches([/\b(cash on delivery|cod|pay on delivery|cash payment)\b/])) {
+    return "Cash on Delivery may depend on the options enabled for the order. Please check the payment choices shown at checkout to see whether it's available.";
+  }
+
+  if (
+    matches([
+      /\b(online payment|pay online|card payment|credit card|debit card|upi)\b/,
+    ])
+  ) {
+    return "You can see the supported online payment methods at checkout. The options displayed there are the ones currently available to use.";
+  }
+
+  if (
+    matches([
+      /\b(payment failed|payment failure|transaction failed|payment error)\b/,
+      /\b(payment unsuccessful|money deducted)\b/,
+    ])
+  ) {
+    return "Sorry that happened. First, check the transaction status with your bank or payment provider. If money was deducted but the order wasn't confirmed, please contact the support team with the transaction reference. Avoid trying the payment again until you've checked whether the first transaction went through.";
+  }
+
+  if (
+    matches([
+      /\b(refund|money back|refund status|refund process)\b/,
+      /\b(cancelled order refund|canceled order refund)\b/,
+    ])
+  ) {
+    return "I can point you in the right direction, but I can't check a live refund status here. Please contact the support team with your order reference and payment details so they can look into it.";
+  }
+
+  // Orders and account.
+  if (
+    matches([
+      /\b(track my order|track order|order tracking|where is my order)\b/,
+      /\b(order status|delivery status|order progress)\b/,
+    ])
+  ) {
+    return "You can check the latest available status in My Orders. Open the order you're interested in to see its details and progress.";
+  }
+
+  if (
+    matches([
+      /\b(order history|previous orders|past orders|my orders)\b/,
+      /\b(orders i ve placed|orders i placed)\b/,
+    ])
+  ) {
+    return "Your previous orders are available in My Orders. Open that page to browse your order history and view individual order details.";
+  }
+
+  if (
+    matches([
+      /\b(cancel order|cancel my order|cancellation)\b/,
+      /\b(can i cancel|how to cancel)\b/,
+    ])
+  ) {
+    return "Cancellation options can depend on the order's current status. Please open the order in My Orders and check whether cancellation is available. If it isn't, contact the support team as soon as possible.";
+  }
+
+  if (
+    matches([
+      /\b(edit order|modify order|change my order|update my order)\b/,
+      /\b(change items in order|add item to existing order)\b/,
+    ])
+  ) {
+    return "Changes to an order may not be possible after it's placed. If you need to change something, contact the support team as soon as you can and share your order reference.";
+  }
+
+  if (
+    matches([/\b(order id|order number|order reference|order confirmation)\b/])
+  ) {
+    return "Your order reference should be included in the order confirmation and available from the My Orders section. You can use it when contacting support too.";
+  }
+
+  if (
+    matches([
+      /\b(sign in|signin|log in|login|my account|account access)\b/,
+      /\b(create account|register|sign up|signup)\b/,
+    ])
+  ) {
+    return "You can sign in or create an account from the account page. Once you're signed in, you'll be able to access the account and order features available to you.";
+  }
+
+  if (matches([/\b(sign out|signout|log out|logout)\b/])) {
+    return "You can sign out from the account menu in the header. If you're on a smaller screen, open the mobile navigation to find the sign-out option.";
+  }
+
+  if (
+    matches([/\b(google login|sign in with google|google authentication)\b/])
+  ) {
+    return "If Google sign-in is enabled for this version of Tasty Treat, you'll see the Google option on the sign-in page. Otherwise, use the sign-in method shown there.";
+  }
+
+  // Restaurant information and support.
+  if (
+    matches([
+      /\b(opening hours|business hours|working hours|operating hours)\b/,
+      /\b(when are you open|when do you close|are you open)\b/,
+    ])
+  ) {
+    return "I don't have confirmed live opening hours to share. Please check the restaurant information on the website or contact the team for the latest hours.";
+  }
+
+  if (
+    matches([
+      /\b(location|restaurant address|where are you located|your address)\b/,
+      /\b(restaurant location|physical address)\b/,
+    ])
+  ) {
+    return "I don't want to give you an unverified address. Please check the Contact Us page for the restaurant's location and contact information.";
+  }
+
+  if (
+    matches([
+      /\b(contact|customer support|customer service|help desk)\b/,
+      /\b(speak to someone|talk to a person|human support)\b/,
+    ])
+  ) {
+    return "Of course. If you'd rather speak with the team, head to the Contact Us page for the available support options.";
+  }
+
+  if (
+    matches([
+      /\b(feedback|suggestion|review|compliment)\b/,
+      /\b(share my experience|give feedback)\b/,
+    ])
+  ) {
+    return "We'd love to hear your feedback. Visit the Contact Us page and share your experience or suggestion with the team.";
+  }
+
+  if (
+    matches([
+      /\b(website not working|site not working|page not loading|website error)\b/,
+      /\b(bug|technical issue|something went wrong)\b/,
+    ])
+  ) {
+    return "Sorry you're running into trouble. Try refreshing the page once. If it keeps happening, contact the support team and mention what you were doing when the issue appeared.";
+  }
+
+  // Navigation and chatbot identity.
+  if (
+    matches([
+      /\b(go to menu|open menu page|menu page)\b/,
+      /\b(go to cart|open cart page|cart page)\b/,
+      /\b(go to checkout|checkout page)\b/,
+      /\b(go to orders|orders page|my orders page)\b/,
+    ])
+  ) {
+    return "Sure — use the shortcut below to jump straight to the section you're looking for.";
+  }
+
+  if (matches([/\b(are you human|real person|are you a bot|are you ai)\b/])) {
+    return "I'm Tasty Assistant, an automated helper for Tasty Treat. I use predefined guidance and the menu information available to this app, so I can help with common questions, but I'm not a human or a full LLM assistant.";
+  }
+
+  if (matches([/\b(can you understand me|do you remember|what did i ask)\b/])) {
+    return "I can use the messages in this chat to respond to your current question, but I don't have full conversational memory like a large language model. If I miss what you mean, try adding a little more detail and I'll do my best to help.";
+  }
+
+  // Friendly fallback that invites a useful clarification.
+  return "I might have missed what you mean. Are you asking about the menu, placing an order, delivery, payment, or an existing order? A little more detail will help me point you in the right direction.";
 }
 
-function getBudget(query: string): number | null {
+function isRecommendationQuery(message: string) {
+  const query = message.toLowerCase();
+
+  return matchesPatterns(query, [
+    /\b(recommend|recommendation|suggest|suggestion|show me|find me)\b/,
+    /\b(what can i order|what should i order|what can i eat)\b/,
+    /\b(vegetarian|non vegetarian|non veg|nonveg|pure veg)\b/,
+    /\b(under|below|within|max|budget)\s*₹?\s*\d+/,
+    /\b(starters?|appetizers?|snacks?|desserts?|drinks?|beverages?|pizza|burgers?|pasta)\b/,
+  ]);
+}
+
+function getBudget(message: string): number | null {
+  const query = message.toLowerCase();
+
   const match = query.match(
-    /(?:under|below|within|max(?:imum)?|budget(?:\s+of)?|less than|<=?)\s*[$₹]?\s*(\d+(?:\.\d+)?)/,
+    /(?:under|below|within|max(?:imum)?|budget(?:\s+of)?|less than)\s*₹?\s*(\d+)/,
   );
 
   if (!match) return null;
 
-  const value = Number(match[1]);
-  return Number.isFinite(value) && value > 0 ? value : null;
+  const budget = Number(match[1]);
+
+  return Number.isFinite(budget) && budget > 0 ? budget : null;
 }
 
-function findDirectDishMatch(
+function getRecommendations(
   menuItems: MenuItem[],
-  query: string,
-): MenuItem | null {
-  const cleaned = normalize(query);
-  const words = cleaned
-    .split(" ")
-    .filter((word) => word.length >= 3 && !STOP_WORDS.has(word));
+  message: string,
+): MenuItem[] {
+  const query = message.toLowerCase();
 
-  if (words.length === 0) return null;
-
-  // Prefer an exact substring match on dish name first.
-  const exactNameMatch = menuItems.find((item) =>
-    cleaned.includes(normalize(item.name)),
-  );
-  if (exactNameMatch) return exactNameMatch;
-
-  // Score partial matches on dish names when the user asks about a specific dish.
-  let bestItem: MenuItem | null = null;
-  let bestScore = 0;
-
-  for (const item of menuItems) {
-    const itemName = normalize(item.name);
-    let score = 0;
-
-    for (const word of words) {
-      if (itemName.includes(word)) {
-        score += 2;
-      }
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestItem = item;
-    }
-  }
-
-  return bestScore >= 2 ? bestItem : null;
-}
-
-function needsMenuLookup(query: string) {
-  return matchesAny(query, [
-    /\b(recommend|recommendation|suggest|suggestion|popular|favourite|favorite|featured|best|craving|hungry|spicy|mild|sweet|cheap|budget|affordable|light|filling)\b/,
-    /\b(what can i order|what should i order|what can i eat|what do you serve|what do you have)\b/,
-    /\b(veg|vegetarian|pure veg|non veg|nonveg|non vegetarian|meat|chicken|paneer|tofu)\b/,
-    /\b(american|italian|mexican|japanese|indian)\b/,
-    /\b(under|below|within|max|less than)\s*[$₹]?\s*\d+/,
-    /\b(starters?|appetizers?|snacks?|desserts?|drinks?|beverages?|pizza|burgers?|pasta|tacos?|sushi|ramen|curry|biryani|salad|soup|noodles?|wings|fries|wraps?|sandwich)\b/,
-    /\b(ingredients?|what s in|what is in|contain|contains|how much is|price of|do you have)\b/,
-  ]);
-}
-
-function filterMenuForQuery(menuItems: MenuItem[], query: string) {
   let results = menuItems.filter((item) => item.isAvailable);
-  const appliedLabels: string[] = [];
 
-  const wantsNonVeg = /\b(non veg|nonveg|non vegetarian|meat)\b/.test(query);
-  const wantsVeg =
-    !wantsNonVeg && /\b(veg|vegetarian|pure veg|plant based)\b/.test(query);
+  const wantsNonVeg = /\b(non veg|nonveg|non vegetarian)\b/.test(query);
+  const wantsVeg = !wantsNonVeg && /\b(veg|vegetarian|pure veg)\b/.test(query);
 
   if (wantsNonVeg) {
     results = results.filter(
       (item) => item.dietaryType.toLowerCase() === "non-veg",
     );
-    appliedLabels.push("non-veg");
   } else if (wantsVeg) {
     results = results.filter(
       (item) => item.dietaryType.toLowerCase() === "veg",
     );
-    appliedLabels.push("vegetarian");
   }
 
-  const budget = getBudget(query);
+  const budget = getBudget(message);
+
   if (budget !== null) {
     results = results.filter((item) => item.price <= budget);
-    appliedLabels.push(`under ${formatPrice(budget)}`);
   }
 
-  const cuisines = ["american", "italian", "mexican", "japanese", "indian"];
-  const requestedCuisine = cuisines.find((cuisine) =>
-    new RegExp(`\\b${cuisine}\\b`).test(query),
-  );
-
-  if (requestedCuisine) {
-    results = results.filter((item) =>
-      (item.categories?.cuisines?.name ?? "")
-        .toLowerCase()
-        .includes(requestedCuisine),
-    );
-    appliedLabels.push(
-      requestedCuisine.charAt(0).toUpperCase() + requestedCuisine.slice(1),
-    );
-  }
-
-  const keywordGroups: Record<string, string[]> = {
-    starter: ["starter", "appetizer", "snack"],
-    appetizer: ["starter", "appetizer"],
-    snack: ["snack", "starter"],
-    dessert: ["dessert", "sweet", "cake", "ice cream", "brownie"],
-    sweet: ["dessert", "sweet", "cake", "ice cream"],
-    drink: ["drink", "beverage", "shake", "coffee", "tea", "mocktail"],
-    beverage: ["drink", "beverage"],
-    spicy: ["spicy", "chili", "chilli", "jalapeno", "tikka", "masala", "hot"],
+  const categoryTerms: Record<string, string[]> = {
+    starters: ["starter", "appetizer"],
+    appetizers: ["starter", "appetizer"],
+    snacks: ["snack"],
+    desserts: ["dessert"],
+    drinks: ["drink", "beverage"],
+    beverages: ["drink", "beverage"],
     pizza: ["pizza"],
     burger: ["burger"],
+    burgers: ["burger"],
     pasta: ["pasta"],
-    taco: ["taco"],
-    sushi: ["sushi"],
-    ramen: ["ramen"],
-    curry: ["curry", "masala"],
-    biryani: ["biryani"],
-    chicken: ["chicken"],
-    paneer: ["paneer"],
-    salad: ["salad"],
-    noodle: ["noodle", "ramen"],
   };
 
-  const matchedTerms = Object.entries(keywordGroups)
-    .filter(([key]) => new RegExp(`\\b${key}s?\\b`).test(query))
-    .flatMap(([, terms]) => terms);
+  const requestedCategories = Object.entries(categoryTerms)
+    .filter(([term]) => new RegExp(`\\b${term}\\b`).test(query))
+    .flatMap(([, categories]) => categories);
 
-  if (matchedTerms.length > 0) {
+  if (requestedCategories.length > 0) {
     results = results.filter((item) => {
-      const haystack = [
-        item.name,
-        item.description ?? "",
-        item.ingredients ?? "",
-        item.categories?.name ?? "",
-        item.categories?.cuisines?.name ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
+      const categoryName = item.categories?.name?.toLowerCase() ?? "";
+      const cuisineName = item.categories?.cuisines?.name?.toLowerCase() ?? "";
+      const itemName = item.name.toLowerCase();
 
-      return matchedTerms.some((term) => haystack.includes(term));
+      return requestedCategories.some(
+        (category) =>
+          categoryName.includes(category) ||
+          cuisineName.includes(category) ||
+          itemName.includes(category),
+      );
     });
   }
 
-  const wantsCheap = /\b(cheap|cheapest|affordable|budget|low price)\b/.test(
-    query,
-  );
-
-  const sorted = [...results].sort((a, b) => {
-    if (wantsCheap) return a.price - b.price;
-    return Number(b.isFeatured) - Number(a.isFeatured) || a.price - b.price;
-  });
-
-  return {
-    items: sorted.slice(0, 4),
-    appliedLabels,
-  };
+  return results
+    .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured))
+    .slice(0, 4);
 }
 
-function buildStaticReply(
-  rawMessage: string,
-  cart: CartContextSnapshot,
-): BotResponse {
-  const query = normalize(rawMessage);
+function getRelevantLinks(message: string): ChatLink[] {
+  const query = message.toLowerCase();
 
-  // Greetings
-  if (
-    matchesAny(query, [
-      /^(hi|hello|hey|yo|hiya|greetings|howdy)$/,
-      /^(good morning|good afternoon|good evening)$/,
-      /^(hi|hello|hey) there$/,
-      /^what s up$/,
-    ])
-  ) {
-    const cartNote =
-      cart.count > 0
-        ? ` Looks like you already have **${cart.count} ${cart.count === 1 ? "item" : "items"}** in your [Cart](/cart) — ready to check out or want to add something else?`
-        : " Craving anything specific, or want to browse the [Menu](/menu)?";
-
-    return {
-      content: `Hey! Good to have you at Tasty Treat.${cartNote}`,
-      links:
-        cart.count > 0
-          ? [ROUTES.cart, ROUTES.menu]
-          : [ROUTES.menu, ROUTES.reservations],
-    };
+  if (/\b(checkout|payment|pay|purchase)\b/.test(query)) {
+    return [chatbotLinks[1], chatbotLinks[2]];
   }
 
-  // Assistant identity / capabilities
-  if (
-    matchesAny(query, [
-      /\b(who are you|what are you|are you ai|are you a bot|are you human|what can you do|how can you help)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "I'm **Tasty Assistant** — I can suggest dishes straight from our live [Menu](/menu), add them to your [Cart](/cart), check ingredients, or take you directly to [Reservations](/reservations) and [My Orders](/orders). What are you in the mood for?",
-      links: [ROUTES.menu, ROUTES.reservations, ROUTES.orders],
-    };
+  if (/\b(cart|basket)\b/.test(query)) {
+    return [chatbotLinks[0], chatbotLinks[1]];
   }
 
-  // Gratitude
-  if (
-    matchesAny(query, [
-      /^(thanks|thank you|thank you so much|thx|ty|awesome|great|perfect|nice)$/,
-      /\bthanks for\b/,
-    ])
-  ) {
-    return {
-      content:
-        "Anytime! If you need another dish idea or want to jump back to the [Menu](/menu), I'm right here.",
-    };
+  if (/\b(track|tracking|order status|order history|my orders)\b/.test(query)) {
+    return [chatbotLinks[3], chatbotLinks[4]];
   }
 
-  // Goodbye
-  if (matchesAny(query, [/^(bye|goodbye|see you|see you later|cya)$/])) {
-    return {
-      content:
-        "See you soon! Enjoy your meal, and swing by the [Menu](/menu) anytime hunger strikes.",
-    };
+  if (/\b(contact|support|complaint|refund)\b/.test(query)) {
+    return [chatbotLinks[4]];
   }
 
-  // Cart & bag status
-  if (
-    matchesAny(query, [
-      /\b(cart|basket|bag)\b/,
-      /\b(remove|delete|clear|empty|update|change).*(item|quantity)\b/,
-    ])
-  ) {
-    if (cart.count > 0) {
-      const preview = cart.itemNames.slice(0, 3).join(", ");
-      const extra =
-        cart.itemNames.length > 3
-          ? ` and ${cart.itemNames.length - 3} more`
-          : "";
-
-      return {
-        content: `You have **${cart.count} ${cart.count === 1 ? "item" : "items"}** (${preview}${extra}) totaling **${formatPrice(cart.subtotal)}** in your [Cart](/cart). You can tweak quantities there or head straight to [Checkout](/checkout).`,
-        links: [ROUTES.cart, ROUTES.checkout],
-      };
-    }
-
-    return {
-      content:
-        "Your [Cart](/cart) is empty right now. Explore the [Menu](/menu) to add your favourites, or ask me for a recommendation and add dishes right here.",
-      links: [ROUTES.menu],
-    };
+  if (/\b(menu|dish|food|order)\b/.test(query)) {
+    return [chatbotLinks[0], chatbotLinks[1]];
   }
 
-  // Checkout, delivery fees, minimum order, delivery address, payment
-  if (
-    matchesAny(query, [
-      /\b(checkout|check out|place my order|complete my order|finish my order|how to order|how do i order|ordering process)\b/,
-      /\b(delivery fee|delivery charge|delivery cost|free delivery|minimum order|min order|delivery time|delivery area|delivery address|payment|pay online|cash on delivery|cod|card|upi)\b/,
-    ])
-  ) {
-    if (cart.count > 0) {
-      return {
-        content: `You're all set with **${formatPrice(cart.subtotal)}** in your bag. Head to [Checkout](/checkout) to pin your delivery address on the map, see exact delivery fees & taxes, and pick **Cash on Delivery** or **Pay Online**.`,
-        links: [ROUTES.checkout, ROUTES.cart],
-      };
-    }
-
-    return {
-      content:
-        "We support **Cash on Delivery** and **Online Payment**, with interactive map delivery pinning and full fee breakdowns at [Checkout](/checkout). Pick your dishes on the [Menu](/menu) first and you're good to go.",
-      links: [ROUTES.menu, ROUTES.checkout],
-    };
-  }
-
-  // Reservations / table booking
-  if (
-    matchesAny(query, [
-      /\b(reserv|book a table|table booking|book table|dine in|dining|seat|group booking)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "We'd love to host you! Pick your date, time, and party size directly on [Reservations](/reservations) (open daily **11:00 AM – 10:00 PM**). Planning for 8+ guests? Reach out via [Contact Us](/contact).",
-      links: [ROUTES.reservations, ROUTES.contact],
-    };
-  }
-
-  // Order tracking, history, edits, cancellations
-  if (
-    matchesAny(query, [
-      /\b(track|tracking|where is my order|order status|order history|previous orders|past orders|my orders|order id|order number|cancel order|edit order|modify order|rider|driver)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "Check live order status, order numbers, and past receipts right on [My Orders](/orders). Need an urgent change or cancellation? Message our team on [Contact Us](/contact).",
-      links: [ROUTES.orders, ROUTES.contact],
-    };
-  }
-
-  // Refunds & payment issues
-  if (
-    matchesAny(query, [
-      /\b(refund|money back|payment failed|payment error|money deducted|transaction failed)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "Sorry you ran into trouble! Double-check your receipt in [My Orders](/orders) and share your order number with us on [Contact Us](/contact) so our team can sort it out quickly.",
-      links: [ROUTES.orders, ROUTES.contact],
-    };
-  }
-
-  // Password reset
-  if (
-    matchesAny(query, [
-      /\b(forgot password|reset password|change password|recover account|locked out)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "No problem — request a fresh reset link straight from [Reset Password](/forgot-password), or head back to [Sign In](/login) once you're set.",
-      links: [ROUTES.forgotPassword, ROUTES.login],
-    };
-  }
-
-  // Account & profile
-  if (matchesAny(query, [/\b(my account|profile|account settings)\b/])) {
-    return {
-      content:
-        "You can view and manage your details anytime in [My Account](/account), or jump to [My Orders](/orders).",
-      links: [ROUTES.account, ROUTES.orders],
-    };
-  }
-
-  // Sign in / Sign up / Google login
-  if (
-    matchesAny(query, [
-      /\b(sign in|signin|log in|login|sign up|signup|create account|register|google login|sign out|logout)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "Jump straight to [Sign In](/login) to access your account with email or Google — or manage an existing session in [My Account](/account).",
-      links: [ROUTES.login, ROUTES.account],
-    };
-  }
-
-  // Hours, location, contact, feedback, support
-  if (
-    matchesAny(query, [
-      /\b(hours|open|close|location|address|where are you|phone|call|email|contact|support|help desk|human|feedback|review|complaint|bug|not working)\b/,
-    ])
-  ) {
-    return {
-      content:
-        "We're open every day from **11:00 AM – 10:00 PM** at **123 Market Street**. Drop us a message anytime on [Contact Us](/contact) or email **hello@tastytreat.example**.",
-      links: [ROUTES.contact, ROUTES.reservations],
-    };
-  }
-
-  // Allergies (general)
-  if (matchesAny(query, [/\b(allergy|allergic|allergen|gluten|nut|dairy)\b/])) {
-    return {
-      content:
-        "Ask me about a specific dish and I'll check its ingredients for you right here — or confirm prep details directly with our kitchen via [Contact Us](/contact) before ordering from the [Menu](/menu).",
-      links: [ROUTES.contact, ROUTES.menu],
-    };
-  }
-
-  // About / story
-  if (
-    matchesAny(query, [/\b(about|story|who makes|philosophy|restaurant)\b/])
-  ) {
-    return {
-      content:
-        "We're all about globally inspired comfort food made fresh to order. Read more on [Our Story](/about) or dive straight into the [Menu](/menu).",
-      links: [ROUTES.about, ROUTES.menu],
-    };
-  }
-
-  // Direct menu navigation
-  if (matchesAny(query, [/\b(menu|browse|explore)\b/])) {
-    return {
-      content:
-        "Jump right into the full [Menu](/menu) — or tell me what you're craving (like *veg under $15* or *Italian*) and I'll pull up picks here.",
-      links: [ROUTES.menu],
-    };
-  }
-
-  // Natural conversational fallback
-  return {
-    content:
-      'I can help you find dishes on the [Menu](/menu), check your [Cart](/cart), book a spot on [Reservations](/reservations), or pull up [My Orders](/orders). Try asking something like **"spicy veg under $15"** or tell me where you\'d like to go!',
-    links: [ROUTES.menu, ROUTES.reservations, ROUTES.orders, ROUTES.contact],
-  };
+  return [];
 }
 
-function renderFormattedText(content: string, onNavigate: () => void) {
-  const tokenRegex = /(\[[^\]]+\]\(\/[^\s)]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+const welcomeStorageKey = "tasty-treat-chatbot-welcome-shown";
 
-  return content.split("\n").map((line, lineIndex, allLines) => {
-    const parts = line.split(tokenRegex);
+function playWelcomeChime() {
+  try {
+    const AudioContextClass = window.AudioContext;
+    if (!AudioContextClass) return;
 
-    return (
-      <Fragment key={lineIndex}>
-        {parts.map((part, partIndex) => {
-          const linkMatch = part.match(/^\[([^\]]+)\]\((\/[^\s)]+)\)$/);
-          if (linkMatch) {
-            const [, label, href] = linkMatch;
-            return (
-              <Link
-                key={partIndex}
-                href={href}
-                onClick={onNavigate}
-                className="font-semibold text-accent underline decoration-accent/45 underline-offset-2 transition-colors hover:text-accent-hover hover:decoration-accent"
-              >
-                {label}
-              </Link>
-            );
-          }
+    const audioContext = new AudioContextClass();
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => {});
+    }
 
-          const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
-          if (boldMatch) {
-            return (
-              <strong key={partIndex} className="font-semibold text-foreground">
-                {boldMatch[1]}
-              </strong>
-            );
-          }
+    const now = audioContext.currentTime;
+    const gain = audioContext.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+    gain.connect(audioContext.destination);
 
-          const italicMatch = part.match(/^\*([^*]+)\*$/);
-          if (italicMatch) {
-            return (
-              <em key={partIndex} className="italic text-foreground/90">
-                {italicMatch[1]}
-              </em>
-            );
-          }
-
-          return <Fragment key={partIndex}>{part}</Fragment>;
-        })}
-        {lineIndex < allLines.length - 1 && <br />}
-      </Fragment>
-    );
-  });
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, now);
+    oscillator.frequency.setValueAtTime(1174.66, now + 0.12);
+    oscillator.connect(gain);
+    oscillator.start(now);
+    oscillator.stop(now + 0.34);
+    oscillator.onended = () => void audioContext.close().catch(() => {});
+  } catch {
+    // Browsers may block audio until the visitor interacts with the page.
+  }
 }
 
 export function Chatbot() {
@@ -606,27 +568,53 @@ export function Chatbot() {
     getServerSnapshot,
   );
 
-  const { lines, count, subtotal, addItem, updateQuantity } = useCart();
+  const { lines, addItem, updateQuantity } = useCart();
 
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       role: "assistant",
       content:
-        "Hey! Welcome to Tasty Treat. Ask me for dish ideas, check ingredients, or jump straight to the [Menu](/menu) or [Reservations](/reservations).",
+        "Hey! Welcome to Tasty Treat 😊 What can I help you find today? You can ask me about the menu, ordering, delivery, or your account.",
     },
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const replyTimeoutRef = useRef<number | null>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
-  const menuCacheRef = useRef<MenuItem[] | null>(null);
+  const welcomeAutoOpenedRef = useRef(false);
 
-  // Close the chatbot when the user clicks or taps outside it.
+  useEffect(() => {
+    if (!isMounted) return;
+
+    try {
+      if (window.localStorage.getItem(welcomeStorageKey)) return;
+    } catch {
+      // If storage is unavailable, still provide the welcome experience this visit.
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (welcomeAutoOpenedRef.current) return;
+      welcomeAutoOpenedRef.current = true;
+      setIsOpen(true);
+
+      try {
+        window.localStorage.setItem(welcomeStorageKey, "true");
+      } catch {
+        // Ignore storage restrictions.
+      }
+
+      playWelcomeChime();
+    }, 2200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isMounted]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -647,14 +635,10 @@ export function Chatbot() {
     };
   }, [isOpen]);
 
-  // Automatically scroll to the latest message.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Clean up pending timeout when the component unmounts.
   useEffect(() => {
     return () => {
       if (replyTimeoutRef.current !== null) {
@@ -663,29 +647,10 @@ export function Chatbot() {
     };
   }, []);
 
-  async function loadAvailableMenu(): Promise<MenuItem[]> {
-    if (menuCacheRef.current) return menuCacheRef.current;
-
-    const response = await fetch("/api/chatbot/menu");
-    if (!response.ok) {
-      throw new Error("Unable to load menu items.");
-    }
-
-    const menuItems: MenuItem[] = await response.json();
-    menuCacheRef.current = menuItems;
-    return menuItems;
-  }
-
   async function sendMessage(message?: string) {
     const text = (message ?? input).trim();
 
     if (!text || isTyping) return;
-
-    const cartSnapshot: CartContextSnapshot = {
-      count,
-      subtotal,
-      itemNames: lines.map((line) => line.item.name),
-    };
 
     setMessages((current) => [
       ...current,
@@ -699,51 +664,10 @@ export function Chatbot() {
     setInput("");
     setIsTyping(true);
 
-    const query = normalize(text);
-
-    // Check if the message is asking about menu items, dishes, ingredients, or recommendations.
-    const shouldCheckMenu = needsMenuLookup(query);
-
-    if (!shouldCheckMenu) {
+    if (!isRecommendationQuery(text)) {
       replyTimeoutRef.current = window.setTimeout(() => {
-        const response = buildStaticReply(text, cartSnapshot);
-
-        setMessages((current) => [
-          ...current,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            content: response.content,
-            ...(response.links?.length ? { links: response.links } : {}),
-          },
-        ]);
-
-        setIsTyping(false);
-        replyTimeoutRef.current = null;
-      }, 420);
-
-      return;
-    }
-
-    try {
-      const menuItems = await loadAvailableMenu();
-
-      // 1. Specific dish ingredient / price / detail question
-      const asksAboutIngredients =
-        /\b(ingredients?|what s in|what is in|contain|contains)\b/.test(query);
-      const asksAboutPrice = /\b(how much|price|cost)\b/.test(query);
-      const directDish = findDirectDishMatch(menuItems, query);
-
-      if (directDish && (asksAboutIngredients || asksAboutPrice)) {
-        const ingredientLine = directDish.ingredients
-          ? `It's made with **${directDish.ingredients}**.`
-          : directDish.description
-            ? directDish.description
-            : "Full details are listed on the [Menu](/menu).";
-
-        const reply = asksAboutPrice
-          ? `**${directDish.name}** is **${formatPrice(directDish.price)}** (${directDish.dietaryType}). You can add it right below or browse more on the [Menu](/menu).`
-          : `Here's what's in **${directDish.name}** (${formatPrice(directDish.price)}): ${ingredientLine} For allergy confirmation, check with our team on [Contact Us](/contact).`;
+        const reply = getBotReply(text);
+        const links = getRelevantLinks(text);
 
         setMessages((current) => [
           ...current,
@@ -751,70 +675,44 @@ export function Chatbot() {
             id: Date.now() + 1,
             role: "assistant",
             content: reply,
-            items: [directDish],
-            links: asksAboutIngredients
-              ? [ROUTES.contact, ROUTES.menu]
-              : [ROUTES.menu],
+            ...(links.length > 0 ? { links } : {}),
           },
         ]);
-        return;
+
+        setIsTyping(false);
+        replyTimeoutRef.current = null;
+      }, 550);
+
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/chatbot/menu");
+
+      if (!response.ok) {
+        throw new Error("Unable to load menu items.");
       }
 
-      // 2. Filtered recommendations
-      const { items, appliedLabels } = filterMenuForQuery(menuItems, query);
+      const menuItems: MenuItem[] = await response.json();
+      const recommendations = getRecommendations(menuItems, text);
 
-      if (items.length > 0) {
-        const filterSummary =
-          appliedLabels.length > 0
-            ? ` **${appliedLabels.join(" · ")}**`
-            : " crowd-favourite";
+      const reply =
+        recommendations.length > 0
+          ? "I found a few options that look like a good match. Have a look — you can add any of them to your cart right here."
+          : "I couldn't find a match for all of those preferences in the available menu. You could try a different category or budget, or browse the full menu.";
 
-        const content = `Here are a few${filterSummary} picks you can add right here — or browse everything on the [Menu](/menu):`;
-
-        setMessages((current) => [
-          ...current,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            content,
-            items,
-            links:
-              cartSnapshot.count > 0
-                ? [ROUTES.menu, ROUTES.cart]
-                : [ROUTES.menu],
-          },
-        ]);
-        return;
-      }
-
-      // 3. Direct dish match fallback even if filter keywords didn't match a category
-      if (directDish) {
-        setMessages((current) => [
-          ...current,
-          {
-            id: Date.now() + 1,
-            role: "assistant",
-            content: `We've got **${directDish.name}** ready to order! Add it below or explore similar picks on the [Menu](/menu).`,
-            items: [directDish],
-            links: [ROUTES.menu],
-          },
-        ]);
-        return;
-      }
-
-      // 4. No matching dishes
       setMessages((current) => [
         ...current,
         {
           id: Date.now() + 1,
           role: "assistant",
-          content:
-            "Nothing matched that exact filter right now, but our full [Menu](/menu) has plenty more options across all cuisines.",
-          links: [ROUTES.menu],
+          content: reply,
+          ...(recommendations.length > 0 ? { items: recommendations } : {}),
+          links: [chatbotLinks[0]],
         },
       ]);
     } catch (error) {
-      console.error("Chatbot menu error:", error);
+      console.error("Chatbot recommendation error:", error);
 
       setMessages((current) => [
         ...current,
@@ -822,8 +720,8 @@ export function Chatbot() {
           id: Date.now() + 1,
           role: "assistant",
           content:
-            "I couldn't reach the live menu just now — you can jump straight to the [Menu](/menu) to browse everything directly.",
-          links: [ROUTES.menu],
+            "Sorry, I couldn't load the menu just now. You can try again in a moment or open the Menu page directly.",
+          links: [{ label: "Explore Menu", href: "/menu" }],
         },
       ]);
     } finally {
@@ -832,8 +730,8 @@ export function Chatbot() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     void sendMessage();
   }
 
@@ -841,46 +739,46 @@ export function Chatbot() {
 
   return createPortal(
     <div
-      className="fixed right-4 bottom-[calc(92px+env(safe-area-inset-bottom))] z-110 font-sans md:right-7"
       ref={chatbotRef}
+      className="fixed right-4 bottom-[calc(92px+env(safe-area-inset-bottom))] z-100 font-sans md:right-7 md:bottom-7"
     >
       {isOpen && (
         <section
-          className="animate-chat-appear fixed right-3 bottom-[calc(160px+env(safe-area-inset-bottom))] flex h-[min(500px,calc(100dvh-180px))] w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[15px] border border-line bg-surface shadow-[0_20px_70px_rgba(0,0,0,0.45)] sm:absolute sm:right-0 sm:bottom-18 sm:h-130 sm:max-h-[calc(100dvh-184px)] sm:w-95"
           aria-label="Tasty Treat virtual assistant"
+          className="absolute bottom-19 right-0 flex h-137.5 max-h-[calc(100dvh-130px)] w-95 max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[15px] border border-white/10 bg-surface shadow-[0_20px_70px_rgba(0,0,0,0.45)] max-[480px]:fixed max-[480px]:bottom-[calc(160px+env(safe-area-inset-bottom))] max-[480px]:right-3 max-[480px]:h-[min(550px,calc(100dvh-115px))] max-[480px]:w-[calc(100vw-24px)]"
         >
-          <header className="flex items-center justify-between border-b border-line bg-input-bg p-4.75">
+          <header className="flex items-center justify-between border-b border-white/10 bg-input-bg px-4.75 py-4.25">
             <div className="flex items-center gap-3">
-              <div className="grid h-10.5 w-10.5 place-items-center rounded-xl bg-accent/13 text-accent">
+              <div className="grid size-10.5 place-items-center rounded-xl bg-[rgba(232,117,50,0.13)] text-accent">
                 <Bot size={21} />
               </div>
-
               <div>
-                <h3 className="mt-0 mb-1.25 text-[13px] font-[750]">
+                <h3 className="mb-1 text-[13px] font-bold text-foreground">
                   Tasty Assistant
                 </h3>
                 <span className="flex items-center gap-1.5 text-[10px] text-muted">
-                  <i className="h-1.5 w-1.5 rounded-full bg-[#8cc58a]" />
+                  <i className="size-1.5 rounded-full bg-[#8cc58a]" />
                   Here to help you
                 </span>
               </div>
             </div>
 
             <button
-              className="grid h-8.5 w-8.5 place-items-center rounded-lg border border-line bg-transparent text-muted transition-colors hover:bg-surface-2 hover:text-white"
+              type="button"
               onClick={() => setIsOpen(false)}
               aria-label="Close chatbot"
+              className="grid size-8.5 place-items-center rounded-lg border border-white/10 bg-transparent text-muted transition-colors hover:bg-surface-2 hover:text-white"
             >
               <X size={19} />
             </button>
           </header>
 
           <div
-            className="scrollbar-tasty flex-1 overflow-y-auto px-3.75 py-5"
+            className="min-h-0 flex-1 overflow-y-auto px-3.75 py-5 [scrollbar-color:#444_transparent] scrollbar-thin"
             aria-live="polite"
           >
             <div className="mb-5.5 text-center">
-              <span className="text-[8px] font-[750] tracking-[0.13em] text-[#777d75]">
+              <span className="text-[8px] font-bold tracking-[0.13em] text-[#777d75]">
                 YOUR TASTY TREAT ASSISTANT
               </span>
             </div>
@@ -889,82 +787,74 @@ export function Chatbot() {
               <div
                 key={message.id}
                 className={`mb-4 flex items-end gap-2 ${
-                  message.role === "user" ? "justify-end" : ""
+                  message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {message.role === "assistant" && (
-                  <div className="grid h-6.75 w-6.75 shrink-0 place-items-center rounded-lg bg-accent/13 text-accent">
+                  <div className="grid size-6.75 shrink-0 place-items-center rounded-lg bg-[rgba(232,117,50,0.13)] text-accent">
                     <Bot size={15} />
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[82%] border px-3.5 py-3 text-[11px] leading-[1.75] ${
+                  className={`max-w-[82%] rounded-xl px-3.5 py-3 text-[11px] leading-[1.75] ${
                     message.role === "user"
-                      ? "rounded-[12px_12px_3px_12px] border-accent/20 bg-accent/13 text-[#f4c5a7]"
-                      : "rounded-[12px_12px_12px_3px] border-line bg-surface-2 text-[#e4e5df]"
+                      ? "rounded-br-[3px] border border-[rgba(232,117,50,0.2)] bg-[rgba(232,117,50,0.13)] text-[#f4c5a7]"
+                      : "rounded-bl-[3px] border border-white/10 bg-surface-2 text-[#e4e5df]"
                   }`}
                 >
-                  <div>
-                    {renderFormattedText(message.content, () =>
-                      setIsOpen(false),
-                    )}
-                  </div>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
 
-                  {/* Live menu recommendation cards */}
                   {message.items && message.items.length > 0 && (
                     <div className="mt-3.5 grid gap-3">
-                      {message.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex min-w-0 items-center gap-2.5 rounded-[9px] border border-line bg-surface/60 p-2.5"
-                        >
-                          {item.image && (
-                            <Image
-                              src={item.image}
-                              alt={item.name}
-                              width={62}
-                              height={62}
-                              className="h-15.5 w-15.5 shrink-0 rounded-[7px] object-cover"
-                            />
-                          )}
+                      {message.items.map((item) => {
+                        const quantity =
+                          lines.find((line) => line.item.id === item.id)
+                            ?.quantity ?? 0;
 
-                          <div className="min-w-0 flex-1">
-                            <strong className="block truncate text-[12px] text-foreground">
-                              {item.name}
-                            </strong>
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex min-w-0 items-center gap-2.5 rounded-[9px] border border-white/10 p-2.5"
+                          >
+                            {item.image && (
+                              <Image
+                                src={item.image}
+                                alt={item.name}
+                                width={62}
+                                height={62}
+                                className="size-15.5 shrink-0 rounded-[7px] object-cover"
+                              />
+                            )}
 
-                            <span className="mt-0.5 block text-[11px] text-muted">
-                              {item.dietaryType} · {formatPrice(item.price)}
-                            </span>
+                            <div className="min-w-0 flex-1">
+                              <strong className="block text-xs text-foreground">
+                                {item.name}
+                              </strong>
+                              <span className="mt-1 block text-[11px] text-muted">
+                                {item.dietaryType} · ₹{item.price}
+                              </span>
 
-                            {(() => {
-                              const quantity =
-                                lines.find((line) => line.item.id === item.id)
-                                  ?.quantity ?? 0;
-
-                              return quantity > 0 ? (
-                                <div className="mt-2 flex min-h-8.5 w-fit items-center gap-2 rounded-full border border-accent/35 bg-surface px-2 py-1 text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)]">
+                              {quantity > 0 ? (
+                                <div className="mt-2 inline-flex w-fit items-center gap-3 rounded-md border border-white/10 bg-input-bg px-2 py-1">
                                   <button
                                     type="button"
-                                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-accent transition-colors hover:bg-accent/15"
                                     aria-label={`Decrease ${item.name} quantity`}
                                     onClick={() =>
                                       updateQuantity(item.id, quantity - 1)
                                     }
+                                    className="px-1 text-sm text-accent hover:text-accent-hover"
                                   >
                                     −
                                   </button>
-
-                                  <span className="min-w-3.75 text-center text-[12px] font-semibold text-white tabular-nums">
+                                  <span className="min-w-3 text-center text-xs text-foreground">
                                     {quantity}
                                   </span>
-
                                   <button
                                     type="button"
-                                    className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-accent transition-colors hover:bg-accent/15"
                                     aria-label={`Increase ${item.name} quantity`}
                                     onClick={() => addItem(item)}
+                                    className="px-1 text-sm text-accent hover:text-accent-hover"
                                   >
                                     +
                                   </button>
@@ -973,19 +863,18 @@ export function Chatbot() {
                                 <button
                                   type="button"
                                   onClick={() => addItem(item)}
-                                  className="mt-2 cursor-pointer rounded-[5px] border-0 bg-accent px-2.75 py-1.5 text-[11px] font-bold text-[#18130f] transition-colors hover:bg-accent-hover"
+                                  className="mt-2 rounded-md bg-accent px-2.75 py-1.5 text-[11px] font-bold text-[#18130f] transition-colors hover:bg-accent-hover"
                                 >
                                   Add to Cart
                                 </button>
-                              );
-                            })()}
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
-                  {/* Quick-action page links */}
                   {message.links && message.links.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {message.links.map((link) => (
@@ -993,10 +882,9 @@ export function Chatbot() {
                           key={link.href}
                           href={link.href}
                           onClick={() => setIsOpen(false)}
-                          className="inline-flex items-center gap-1 rounded-md border border-accent/45 bg-accent/10 px-2.5 py-1.5 text-[11px] font-semibold text-accent no-underline transition-colors hover:border-accent hover:bg-accent/18"
+                          className="inline-flex rounded-md border border-accent px-2.5 py-1.75 text-[11px] font-semibold text-accent no-underline transition-colors hover:bg-[rgba(232,117,50,0.12)]"
                         >
                           {link.label}
-                          <ArrowUpRight size={12} />
                         </Link>
                       ))}
                     </div>
@@ -1006,16 +894,16 @@ export function Chatbot() {
             ))}
 
             {messages.length === 1 && !isTyping && (
-              <div className="mt-2 mb-4.5 ml-8.75 grid justify-items-start gap-2">
-                <span className="mb-0.75 text-[8px] font-[750] tracking-[0.13em] text-[#777d75]">
+              <div className="mb-4.5 ml-8.75 grid justify-items-start gap-2">
+                <span className="mb-0.5 text-[8px] font-bold tracking-[0.13em] text-[#777d75]">
                   QUICK QUESTIONS
                 </span>
-
                 {suggestedQuestions.map((question) => (
                   <button
                     key={question}
-                    className="rounded-[20px] border border-accent/30 bg-transparent px-3 py-2.25 text-[10px] text-[#e6a47e] transition-colors duration-200 hover:bg-accent/12"
+                    type="button"
                     onClick={() => void sendMessage(question)}
+                    className="rounded-full border border-[rgba(232,117,50,0.3)] bg-transparent px-3 py-2.25 text-left text-[10px] text-[#e6a47e] transition-colors hover:bg-[rgba(232,117,50,0.12)]"
                   >
                     {question}
                   </button>
@@ -1025,14 +913,13 @@ export function Chatbot() {
 
             {isTyping && (
               <div className="mb-4 flex items-end gap-2">
-                <div className="grid h-6.75 w-6.75 shrink-0 place-items-center rounded-lg bg-accent/13 text-accent">
+                <div className="grid size-6.75 shrink-0 place-items-center rounded-lg bg-[rgba(232,117,50,0.13)] text-accent">
                   <Bot size={15} />
                 </div>
-
-                <div className="flex items-center gap-1 rounded-[12px_12px_12px_3px] border border-line bg-surface-2 p-3.75">
-                  <i className="animate-chat-bounce h-1.25 w-1.25 rounded-full bg-accent" />
-                  <i className="animate-chat-bounce h-1.25 w-1.25 rounded-full bg-accent [animation-delay:0.2s]" />
-                  <i className="animate-chat-bounce h-1.25 w-1.25 rounded-full bg-accent [animation-delay:0.4s]" />
+                <div className="flex items-center gap-1 rounded-xl rounded-bl-[3px] border border-white/10 bg-surface-2 px-4 py-3.75">
+                  <i className="size-1.25 animate-bounce rounded-full bg-accent [animation-delay:0ms]" />
+                  <i className="size-1.25 animate-bounce rounded-full bg-accent [animation-delay:150ms]" />
+                  <i className="size-1.25 animate-bounce rounded-full bg-accent [animation-delay:300ms]" />
                 </div>
               </div>
             )}
@@ -1041,24 +928,23 @@ export function Chatbot() {
           </div>
 
           <form
-            className="flex items-center gap-2.25 border-t border-line bg-input-bg p-3.25"
             onSubmit={handleSubmit}
+            className="flex items-center gap-2.25 border-t border-white/10 bg-input-bg p-3.25"
           >
             <input
               type="text"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask for a dish, price, or page..."
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask me anything..."
               aria-label="Type your message"
               disabled={isTyping}
-              className="w-full min-w-0 rounded-lg border border-line bg-surface-2 px-3.25 py-3 text-[11px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent"
+              className="min-w-0 flex-1 rounded-lg border border-white/10 bg-surface-2 px-3.25 py-3 text-[11px] text-foreground outline-none placeholder:text-[#777d75] focus:border-accent disabled:opacity-60"
             />
-
             <button
               type="submit"
               disabled={!input.trim() || isTyping}
               aria-label="Send message"
-              className="grid h-10.25 w-10.25 shrink-0 place-items-center rounded-lg border-0 bg-accent text-[#17130f] disabled:cursor-not-allowed disabled:opacity-40"
+              className="grid size-10.25 shrink-0 place-items-center rounded-lg bg-accent text-[#17130f] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send size={17} />
             </button>
@@ -1072,18 +958,29 @@ export function Chatbot() {
       )}
 
       <button
-        className={`relative ml-auto grid h-14 w-14 place-items-center rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-[transform,background-color] duration-200 hover:-translate-y-1 ${
-          isOpen
-            ? "border border-line bg-surface-2 text-foreground"
-            : "border-0 bg-accent text-[#17130f] hover:bg-accent-hover"
-        }`}
-        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+        onClick={() => {
+          if (!isOpen) {
+            welcomeAutoOpenedRef.current = true;
+            try {
+              window.localStorage.setItem(welcomeStorageKey, "true");
+            } catch {
+              // Ignore storage restrictions.
+            }
+          }
+          setIsOpen((current) => !current);
+        }}
         aria-label={isOpen ? "Close chat" : "Open chat"}
         aria-expanded={isOpen}
+        className={`relative ml-auto grid size-15 place-items-center rounded-full border-0 bg-accent text-[#17130f] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:-translate-y-1 hover:bg-accent-hover max-[480px]:size-14 ${
+          isOpen
+            ? "border border-white/10 bg-surface-2 text-foreground hover:bg-surface-2"
+            : ""
+        }`}
       >
         {isOpen ? <X size={24} /> : <MessageCircle size={25} />}
         {!isOpen && (
-          <span className="absolute top-0.75 right-0.75 h-3 w-3 rounded-full border-2 border-background bg-[#8cc58a]" />
+          <span className="absolute right-0.75 top-0.75 size-3 rounded-full border-2 border-background bg-[#8cc58a]" />
         )}
       </button>
     </div>,

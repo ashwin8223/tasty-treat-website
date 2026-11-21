@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useCart } from "./cart-provider";
 import { createOrder } from "../_lib/actions";
 import type { RestaurantSettings } from "../_lib/data-service";
@@ -44,11 +45,12 @@ const checkoutRadioRowClasses =
   "my-2 flex min-h-11.75 cursor-pointer flex-row items-center gap-2.5 rounded-[9px] border border-line bg-white/[0.018] px-3.25 py-2.75 text-[11px] font-semibold text-[#e2e3de] transition-colors duration-180 has-[input:checked]:border-accent/55 has-[input:checked]:bg-accent/[0.075]";
 
 export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
-  const { lines, subtotal, clearCart } = useCart();
+  const { lines, subtotal } = useCart();
   const router = useRouter();
 
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [isPending, setIsPending] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
   const [deliveryLocation, setDeliveryLocation] = useState<{
@@ -79,6 +81,32 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
 
   const minimumOrderNotMet = subtotal < settings.minimumOrderAmount;
 
+  // Show the redirect screen before checking whether the cart is empty.
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-5 bg-background/95 backdrop-blur-sm">
+        <div className="relative flex h-16 w-16 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-line" />
+
+          <LoaderCircle
+            size={36}
+            className="animate-spin text-accent motion-reduce:animate-none"
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-2 text-center">
+          <p className="text-xs font-extrabold tracking-[0.2em] text-foreground">
+            ORDER CONFIRMED
+          </p>
+
+          <p className="animate-pulse text-sm text-muted-foreground motion-reduce:animate-none">
+            Taking you to your confirmation...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!lines.length) {
     return (
       <section className="mx-auto min-h-[65vh] w-[min(1160px,calc(100%-48px))] pt-18.75 pb-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:pt-13.75 max-[700px]:pb-17.5">
@@ -86,6 +114,7 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
           <h2 className="my-2.5 text-[24px] tracking-[-0.04em]">
             Nothing to check out yet.
           </h2>
+
           <Link
             className="mt-2 inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5.25 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover"
             href="/menu"
@@ -141,10 +170,12 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
         throw new Error("Unable to confirm your order.");
       }
 
-      clearCart();
-
+      // Keep the cart intact during navigation.
+      setIsRedirecting(true);
       router.push(`/checkout/success?orderId=${result.orderId}`);
     } catch (error) {
+      setIsRedirecting(false);
+
       setSubmitError(
         error instanceof Error
           ? error.message
@@ -361,7 +392,17 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             type="submit"
             disabled={isPending || minimumOrderNotMet}
           >
-            {isPending ? "Placing order..." : "Place order"}
+            {isPending ? (
+              <>
+                <LoaderCircle
+                  size={16}
+                  className="animate-spin motion-reduce:animate-none"
+                />
+                Placing order...
+              </>
+            ) : (
+              "Place order"
+            )}
           </button>
 
           {minimumOrderNotMet && (
@@ -394,6 +435,7 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             <h2 className="m-0 font-sans text-[17px] leading-[1.3] font-bold tracking-[-0.035em] text-foreground">
               Your order
             </h2>
+
             <span className="rounded-full border border-line bg-white/2.5 px-2.25 py-1.25 text-[10px] text-muted">
               {lines.length} items
             </span>
@@ -409,6 +451,7 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
                   <span className="wrap-break-word text-[12px] leading-normal font-semibold text-foreground">
                     {item.name}
                   </span>
+
                   <span className="text-[10px] text-muted">
                     Qty: {quantity}
                   </span>
@@ -455,6 +498,7 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
 
           <div className="mt-3.75 flex items-center justify-between gap-3 text-[13px] font-semibold text-foreground">
             <span>Total</span>
+
             <strong className="text-[24px] font-bold tracking-[-0.03em] text-accent">
               ${total.toFixed(2)}
             </strong>

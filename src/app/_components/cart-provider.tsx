@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
 import toast from "react-hot-toast";
@@ -19,6 +20,7 @@ type CartContextValue = {
   lines: CartLine[];
   count: number;
   subtotal: number;
+  isHydrated: boolean;
   addItem: (item: MenuItem) => void;
   updateQuantity: (id: number, quantity: number) => void;
   removeItem: (id: number) => void;
@@ -67,6 +69,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           );
 
           // Intentional state update: restore cart from browser storage.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setLines(validLines.slice(0, MAX_DISTINCT_ITEMS));
         }
       }
@@ -92,47 +95,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // 07. ADD ITEM TO CART
 
-  const addItem = (item: MenuItem) => {
-    const existingLine = lines.find((line) => line.item.id === item.id);
+  const addItem = useCallback(
+    (item: MenuItem) => {
+      const existingLine = lines.find((line) => line.item.id === item.id);
 
-    // Check the maximum quantity for an existing item.
-    if (existingLine && existingLine.quantity >= MAX_ITEM_QUANTITY) {
-      toast("You can add up to 10 of this item per order.", {
-        icon: "⚠️",
-      });
-      return;
-    }
-
-    // Check the maximum number of distinct items.
-    if (!existingLine && lines.length >= MAX_DISTINCT_ITEMS) {
-      toast("Your cart can contain up to 10 different items.", {
-        icon: "⚠️",
-      });
-      return;
-    }
-
-    setLines((current) => {
-      const found = current.find((line) => line.item.id === item.id);
-
-      if (found) {
-        if (found.quantity >= MAX_ITEM_QUANTITY) return current;
-
-        return current.map((line) =>
-          line.item.id === item.id
-            ? { ...line, quantity: line.quantity + 1 }
-            : line,
-        );
+      if (existingLine && existingLine.quantity >= MAX_ITEM_QUANTITY) {
+        toast("You can add up to 10 of this item per order.", {
+          icon: "⚠️",
+        });
+        return;
       }
 
-      if (current.length >= MAX_DISTINCT_ITEMS) return current;
+      if (!existingLine && lines.length >= MAX_DISTINCT_ITEMS) {
+        toast("Your cart can contain up to 10 different items.", {
+          icon: "⚠️",
+        });
+        return;
+      }
 
-      return [...current, { item, quantity: 1 }];
-    });
-  };
+      setLines((current) => {
+        const found = current.find((line) => line.item.id === item.id);
+
+        if (found) {
+          if (found.quantity >= MAX_ITEM_QUANTITY) return current;
+
+          return current.map((line) =>
+            line.item.id === item.id
+              ? { ...line, quantity: line.quantity + 1 }
+              : line,
+          );
+        }
+
+        if (current.length >= MAX_DISTINCT_ITEMS) return current;
+
+        return [...current, { item, quantity: 1 }];
+      });
+    },
+    [lines],
+  );
 
   // 08. UPDATE ITEM QUANTITY
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = useCallback((id: number, quantity: number) => {
     if (quantity > MAX_ITEM_QUANTITY) {
       toast("You can add up to 10 of this item per order.", {
         icon: "⚠️",
@@ -151,16 +155,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         line.item.id === id ? { ...line, quantity } : line,
       );
     });
-  };
+  }, []);
 
   // 09. REMOVE ITEM FROM CART
 
-  const removeItem = (id: number) =>
-    setLines((current) => current.filter((line) => line.item.id !== id));
+  const removeItem = useCallback(
+    (id: number) =>
+      setLines((current) => current.filter((line) => line.item.id !== id)),
+    [],
+  );
 
   // 10. CLEAR CART
 
-  const clearCart = () => setLines([]);
+  const clearCart = useCallback(() => setLines([]), []);
 
   // 11. CART CONTEXT VALUE
 
@@ -172,12 +179,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         (sum, line) => sum + line.item.price * line.quantity,
         0,
       ),
+      isHydrated,
       addItem,
       updateQuantity,
       removeItem,
       clearCart,
     }),
-    [lines],
+    [lines, isHydrated, addItem, updateQuantity, removeItem, clearCart],
   );
 
   // 12. RENDER PROVIDER

@@ -13,11 +13,16 @@ const cuisines = [
   "Indian",
 ];
 
+const dietaryOptions = ["All", "Veg", "Non-veg"] as const;
+
+type DietaryFilter = (typeof dietaryOptions)[number];
+
 const ITEMS_PER_PAGE = 12;
 
 export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
   const [cuisine, setCuisine] = useState("All");
   const [category, setCategory] = useState("All");
+  const [dietaryType, setDietaryType] = useState<DietaryFilter>("All");
   const [query, setQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -50,20 +55,35 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
     };
   }, []);
 
-  // Get unique category names from the menu items
-  const categories = useMemo(
-    () => [
-      "All",
-      ...Array.from(
-        new Set(
-          menuItems
-            .map((item) => item.categories?.name)
-            .filter((name): name is string => Boolean(name)),
-        ),
-      ).sort((a, b) => a.localeCompare(b)),
-    ],
-    [menuItems],
-  );
+  // Get unique category names and place Desserts and Beverages at the end
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(
+      new Set(
+        menuItems
+          .map((item) => item.categories?.name)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    );
+
+    const sortedCategories = uniqueCategories.sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    const desserts = sortedCategories.filter(
+      (name) => name.toLowerCase() === "desserts",
+    );
+
+    const beverages = sortedCategories.filter(
+      (name) => name.toLowerCase() === "beverages",
+    );
+
+    const mainCategories = sortedCategories.filter(
+      (name) =>
+        name.toLowerCase() !== "desserts" && name.toLowerCase() !== "beverages",
+    );
+
+    return ["All", ...mainCategories, ...desserts, ...beverages];
+  }, [menuItems]);
 
   // Filter menu items
   const filtered = useMemo(
@@ -77,12 +97,13 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
             itemCuisine === cuisine ||
             itemCuisine === "Shared") &&
           (category === "All" || itemCategory === category) &&
+          (dietaryType === "All" || item.dietaryType === dietaryType) &&
           `${item.name} ${item.description ?? ""} ${itemCategory}`
             .toLowerCase()
             .includes(query.toLowerCase())
         );
       }),
-    [menuItems, cuisine, category, query],
+    [menuItems, cuisine, category, dietaryType, query],
   );
 
   // Calculate pagination
@@ -119,11 +140,11 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
     }`;
 
   return (
-    <section className="mx-auto w-[min(1160px,calc(100%-48px))] py-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-17">
-      <div className="mb-7.5 flex items-center justify-between gap-4.5 max-[950px]:flex-wrap max-[700px]:flex-col max-[700px]:items-stretch">
+    <section className="mx-auto w-[min(1160px,calc(100%-48px))] py-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-12">
+      <div className="mb-7.5 flex items-center justify-between gap-4.5 max-[950px]:flex-wrap max-[700px]:mb-4 max-[700px]:grid max-[700px]:grid-cols-1 max-[700px]:gap-3">
         {/* Cuisine filters */}
         <div
-          className="flex flex-wrap gap-2 max-[950px]:flex-[1_1_100%]"
+          className="flex flex-wrap gap-2 max-[950px]:flex-[1_1_100%] max-[700px]:flex-none max-[700px]:gap-1.5"
           aria-label="Filter by cuisine"
         >
           {cuisines.map((item) => (
@@ -133,7 +154,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
                 setCuisine(item);
                 setCurrentPage(1);
               }}
-              className={`rounded-[30px] border px-3.25 py-2.25 text-[10px] ${
+              className={`rounded-[30px] border px-3.25 py-2.25 text-[10px] max-[700px]:px-2.75 max-[700px]:py-1.75 ${
                 cuisine === item
                   ? "border-accent bg-accent font-[750] text-[#1b1713]"
                   : "border-line bg-transparent text-[#b6bbb3]"
@@ -144,9 +165,48 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
           ))}
         </div>
 
+        {/* Dietary filters */}
+        <div
+          className="flex flex-wrap items-center gap-2 max-[950px]:flex-[1_1_100%] max-[700px]:flex-none max-[700px]:gap-1.5"
+          aria-label="Filter by dietary preference"
+        >
+          {dietaryOptions.map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={dietaryType === option}
+              onClick={() => {
+                setDietaryType(option);
+                setCurrentPage(1);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-[30px] border px-3.25 py-2.25 text-[10px] transition-colors max-[700px]:px-2.75 max-[700px]:py-1.75 ${
+                dietaryType === option
+                  ? "border-accent bg-accent font-[750] text-[#1b1713]"
+                  : "border-line bg-transparent text-[#b6bbb3]"
+              }`}
+            >
+              {option === "Veg" && (
+                <span
+                  className="h-2 w-2 rounded-full bg-[#69b76b]"
+                  aria-hidden="true"
+                />
+              )}
+
+              {option === "Non-veg" && (
+                <span
+                  className="h-2 w-2 rounded-full bg-[#d96b67]"
+                  aria-hidden="true"
+                />
+              )}
+
+              {option === "All" ? "All dishes" : option}
+            </button>
+          ))}
+        </div>
+
         {/* Custom category dropdown */}
         <div
-          className="relative z-10 w-45 flex-[0_0_180px] max-[768px]:w-40 max-[768px]:basis-40 max-[600px]:w-full max-[600px]:flex-[1_1_100%]"
+          className="relative z-10 w-45 flex-[0_0_180px] max-md:w-40 max-md:basis-40 max-[600px]:w-full max-[600px]:flex-[1_1_100%] max-[700px]:flex-none"
           ref={categoryRef}
         >
           <button
@@ -183,7 +243,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
 
           {categoryOpen && (
             <div
-              className="scrollbar-tasty animate-dropdown-appear absolute top-[calc(100%+7px)] left-0 max-h-55 w-full overflow-x-hidden overflow-y-auto rounded-lg border border-accent/20 bg-surface p-1.25 shadow-[0_12px_30px_rgba(0,0,0,0.4)] max-[768px]:max-h-47.5 max-[600px]:max-h-45"
+              className="scrollbar-tasty animate-dropdown-appear absolute top-[calc(100%+7px)] left-0 max-h-55 w-full overflow-x-hidden overflow-y-auto rounded-lg border border-accent/20 bg-surface p-1.25 shadow-[0_12px_30px_rgba(0,0,0,0.4)] max-md:max-h-47.5 max-[600px]:max-h-45 max-[700px]:top-auto max-[700px]:bottom-[calc(100%+7px)] max-[700px]:max-h-44"
               role="listbox"
             >
               {categories.map((item) => (
@@ -216,7 +276,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
 
         {/* Search */}
         <input
-          className="w-55 rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent max-[950px]:w-47.5 max-[950px]:flex-[0_0_190px] max-[700px]:h-8.5 max-[700px]:min-h-8.5 max-[700px]:w-full max-[700px]:flex-[0_0_34px] max-[700px]:px-2.5 max-[700px]:py-0 max-[700px]:text-[11px] max-[700px]:leading-normal"
+          className="w-55 rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent max-[950px]:w-47.5 max-[950px]:flex-[0_0_190px] max-[700px]:h-8.5 max-[700px]:min-h-8.5 max-[700px]:w-full max-[700px]:flex-none max-[700px]:px-2.5 max-[700px]:py-0 max-[700px]:text-[11px] max-[700px]:leading-normal"
           placeholder="Search dishes..."
           value={query}
           onChange={(e) => {
@@ -301,7 +361,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
             No dishes found
           </h3>
           <p className="mb-5 max-w-115 text-[12px] leading-[1.8] text-muted">
-            Try another search, cuisine or category.
+            Try another search, cuisine, category or dietary preference.
           </p>
         </div>
       )}

@@ -39,7 +39,7 @@ export function MenuCard({ item }: { item: MenuItem }) {
         )}
 
         {isUnavailable ? (
-          <span className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center bg-[#101110]/55 text-center text-[13px] font-semibold text-white">
+          <span className="pointer-events-none absolute inset-0 z-2 flex items-center justify-center bg-background/55 text-center text-[13px] font-semibold text-white">
             Currently unavailable
           </span>
         ) : quantity === 0 ? (
@@ -98,7 +98,7 @@ export function MenuCard({ item }: { item: MenuItem }) {
           <span className="text-[9px] font-[750] tracking-[0.08em] text-accent uppercase">
             {item.categories?.name}
           </span>
-          <h3 className="mt-1.25 text-[15px] tracking-[-0.025em] max-[700px]:text-[13px]">
+          <h3 className="mt-1.25 text-[15px] tracking-tight max-[700px]:text-[13px]">
             {item.name}
           </h3>
         </div>
