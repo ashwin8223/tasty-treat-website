@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type SubmitEvent, useState } from "react";
 import { LoaderCircle } from "lucide-react";
-import { useCart } from "./cart-provider";
+import { useCart } from "./CartProvider";
 import { createOrder } from "../_lib/actions";
 import type { RestaurantSettings } from "../_lib/data-service";
 

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import type { MenuItem } from "../_lib/data-service";
-import { useCart } from "./cart-provider";
+import { useCart } from "./CartProvider";
 import Image from "next/image";
 
 // Hydration-safe check that allows the chatbot to render through a portal

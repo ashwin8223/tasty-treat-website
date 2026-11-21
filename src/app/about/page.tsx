@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { PageHero } from "../_components/page-hero";
-import { FeatureStrip } from "../_components/feature-strip";
+import { PageHero } from "../_components/PageHero";
+import { FeatureStrip } from "../_components/FeatureStrip";
 
 export default function AboutPage() {
   return (

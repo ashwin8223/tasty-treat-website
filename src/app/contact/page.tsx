@@ -1,5 +1,5 @@
 import { Mail, MapPin, Phone, Clock3 } from "lucide-react";
-import { PageHero } from "../_components/page-hero";
+import { PageHero } from "../_components/PageHero";
 
 const fieldClasses =
   "w-full rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent";

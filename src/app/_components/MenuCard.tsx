@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import { useCart } from "./cart-provider";
+import { useCart } from "./CartProvider";
 import type { MenuItem } from "../_lib/data-service";
 
 export function MenuCard({ item }: { item: MenuItem }) {

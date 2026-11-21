@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { PageHero } from "../_components/page-hero";
+import { PageHero } from "../_components/PageHero";
 import { getMenuItems } from "../_lib/data-service";
-import { MenuClient } from "../_components/menuClient";
 import { LoaderCircle } from "lucide-react";
+import { MenuClient } from "../_components/MenuClient";
 
 async function MenuContent() {
   const menuItems = await getMenuItems();

@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./_styles/globals.css";
-import { CartProvider } from "./_components/cart-provider";
-import { Footer } from "./_components/footer";
-import { Chatbot } from "./_components/chatbot";
-import { CartBottomBar } from "./_components/cart-bottom-bar";
+import { CartProvider } from "./_components/CartProvider";
+import { CartBottomBar } from "./_components/CartBottomBar";
 import { Header } from "./_components/Header";
+import { Footer } from "./_components/Footer";
+import { Chatbot } from "./_components/Chatbot";
+
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 

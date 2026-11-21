@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { useCart } from "./cart-provider";
+import { useCart } from "./CartProvider";
 import { logout } from "../_lib/apiAuth";
 
 const links = [

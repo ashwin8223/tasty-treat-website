@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight, ShoppingBag } from "lucide-react";
-import { useCart } from "./cart-provider";
+import { useCart } from "./CartProvider";
 
 export function CartBottomBar() {
   const { count, subtotal } = useCart();

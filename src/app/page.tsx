@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowUpRight, Sparkles } from "lucide-react";
-import { Hero } from "./_components/hero";
-import { SectionTitle } from "./_components/section-title";
-import { MenuCard } from "./_components/menu-card";
-import { FeatureStrip } from "./_components/feature-strip";
+import { SectionTitle } from "./_components/SectionTitle";
+import { MenuCard } from "./_components/MenuCard";
+import { FeatureStrip } from "./_components/FeatureStrip";
 import { getMenuItems } from "./_lib/data-service";
+import { Hero } from "./_components/Hero";
 
 export default async function HomePage() {
   const menuItems = await getMenuItems();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MenuCard } from "./menu-card";
+import { MenuCard } from "./MenuCard";
 import type { MenuItem } from "../_lib/data-service";
 
 const cuisines = [
