@@ -111,11 +111,21 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
     }
   }
 
+  const getPaginationButtonClasses = (isActive = false) =>
+    `inline-flex h-9.5 min-w-9.5 cursor-pointer items-center justify-center rounded-full border px-3.25 text-[12px] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-35 max-[600px]:h-9 max-[600px]:min-w-8.5 max-[600px]:px-2.25 max-[600px]:text-[11px] ${
+      isActive
+        ? "border-accent bg-accent font-semibold text-white"
+        : "border-accent/25 bg-transparent font-medium text-[#b8b8b8] hover:enabled:border-accent hover:enabled:bg-accent/8 hover:enabled:text-accent"
+    }`;
+
   return (
-    <section className="container section-block">
-      <div className="menu-toolbar">
+    <section className="mx-auto w-[min(1160px,calc(100%-48px))] py-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-17">
+      <div className="mb-7.5 flex items-center justify-between gap-4.5 max-[950px]:flex-wrap max-[700px]:flex-col max-[700px]:items-stretch">
         {/* Cuisine filters */}
-        <div className="filter-pills" aria-label="Filter by cuisine">
+        <div
+          className="flex flex-wrap gap-2 max-[950px]:flex-[1_1_100%]"
+          aria-label="Filter by cuisine"
+        >
           {cuisines.map((item) => (
             <button
               key={item}
@@ -123,9 +133,11 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
                 setCuisine(item);
                 setCurrentPage(1);
               }}
-              className={
-                cuisine === item ? "filter-pill selected" : "filter-pill"
-              }
+              className={`rounded-[30px] border px-3.25 py-2.25 text-[10px] ${
+                cuisine === item
+                  ? "border-accent bg-accent font-[750] text-[#1b1713]"
+                  : "border-line bg-transparent text-[#b6bbb3]"
+              }`}
             >
               {item}
             </button>
@@ -133,21 +145,28 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
         </div>
 
         {/* Custom category dropdown */}
-        <div className="category-dropdown" ref={categoryRef}>
+        <div
+          className="relative z-10 w-45 flex-[0_0_180px] max-[768px]:w-40 max-[768px]:basis-40 max-[600px]:w-full max-[600px]:flex-[1_1_100%]"
+          ref={categoryRef}
+        >
           <button
             type="button"
-            className={`category-dropdown-trigger ${
-              categoryOpen ? "open" : ""
+            className={`flex min-h-10.5 w-full cursor-pointer items-center justify-between gap-2.5 rounded-[7px] border bg-surface px-3.25 text-left text-[11px] text-foreground transition-colors duration-200 hover:border-accent/60 max-[600px]:min-h-10 ${
+              categoryOpen ? "border-accent/60" : "border-line"
             }`}
             onClick={() => setCategoryOpen((open) => !open)}
             aria-expanded={categoryOpen}
             aria-haspopup="listbox"
             aria-label="Filter by category"
           >
-            <span>{category === "All" ? "All categories" : category}</span>
+            <span className="truncate">
+              {category === "All" ? "All categories" : category}
+            </span>
 
             <svg
-              className="category-dropdown-arrow"
+              className={`shrink-0 text-accent transition-transform duration-200 ${
+                categoryOpen ? "rotate-180" : ""
+              }`}
               width="14"
               height="14"
               viewBox="0 0 24 24"
@@ -163,15 +182,20 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
           </button>
 
           {categoryOpen && (
-            <div className="category-dropdown-menu" role="listbox">
+            <div
+              className="scrollbar-tasty animate-dropdown-appear absolute top-[calc(100%+7px)] left-0 max-h-55 w-full overflow-x-hidden overflow-y-auto rounded-lg border border-accent/20 bg-surface p-1.25 shadow-[0_12px_30px_rgba(0,0,0,0.4)] max-[768px]:max-h-47.5 max-[600px]:max-h-45"
+              role="listbox"
+            >
               {categories.map((item) => (
                 <button
                   key={item}
                   type="button"
                   role="option"
                   aria-selected={category === item}
-                  className={`category-dropdown-option ${
-                    category === item ? "selected" : ""
+                  className={`flex min-h-8.5 w-full cursor-pointer items-center justify-between gap-2 rounded-[5px] border-0 px-2.5 py-1.75 text-left text-[11px] transition-colors duration-150 ${
+                    category === item
+                      ? "bg-accent/13 font-bold text-accent"
+                      : "bg-transparent text-[#b8bbb5] hover:bg-accent/10 hover:text-foreground"
                   }`}
                   onClick={() => {
                     setCategory(item);
@@ -182,7 +206,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
                   <span>{item === "All" ? "All categories" : item}</span>
 
                   {category === item && (
-                    <span className="category-dropdown-check">✓</span>
+                    <span className="text-[12px] font-bold text-accent">✓</span>
                   )}
                 </button>
               ))}
@@ -192,7 +216,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
 
         {/* Search */}
         <input
-          className="search-input"
+          className="w-55 rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent max-[950px]:w-47.5 max-[950px]:flex-[0_0_190px] max-[700px]:h-8.5 max-[700px]:min-h-8.5 max-[700px]:w-full max-[700px]:flex-[0_0_34px] max-[700px]:px-2.5 max-[700px]:py-0 max-[700px]:text-[11px] max-[700px]:leading-normal"
           placeholder="Search dishes..."
           value={query}
           onChange={(e) => {
@@ -205,16 +229,16 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
       {/* Menu items and pagination */}
       {currentItems.length ? (
         <>
-          <div className="menu-grid">
+          <div className="grid grid-cols-4 gap-5 max-[950px]:grid-cols-2 max-[700px]:gap-x-3.25 max-[700px]:gap-y-6">
             {currentItems.map((item) => (
               <MenuCard key={item.id} item={item} />
             ))}
           </div>
 
           {totalPages > 1 && (
-            <div className="pagination">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-2 max-[600px]:mt-8 max-[600px]:flex-nowrap max-[600px]:gap-1.25">
               <button
-                className="pagination-button"
+                className={getPaginationButtonClasses()}
                 onClick={() => setCurrentPage((page) => page - 1)}
                 disabled={currentPage === 1}
               >
@@ -222,18 +246,14 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
               </button>
 
               {/* Desktop pagination */}
-              <div className="pagination-pages">
+              <div className="flex items-center justify-center gap-2 max-[600px]:hidden">
                 {Array.from(
                   { length: totalPages },
                   (_, index) => index + 1,
                 ).map((page) => (
                   <button
                     key={page}
-                    className={
-                      currentPage === page
-                        ? "pagination-button active"
-                        : "pagination-button"
-                    }
+                    className={getPaginationButtonClasses(currentPage === page)}
                     onClick={() => setCurrentPage(page)}
                   >
                     {page}
@@ -242,23 +262,21 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
               </div>
 
               {/* Mobile compact pagination */}
-              <div className="pagination-compact">
+              <div className="hidden items-center justify-center gap-1 max-[600px]:flex">
                 {compactPages.map((page, index) =>
                   page === "ellipsis" ? (
                     <span
                       key={`ellipsis-${index}`}
-                      className="pagination-ellipsis"
+                      className="flex min-w-5 items-center justify-center text-[12px] text-[#888888]"
                     >
                       …
                     </span>
                   ) : (
                     <button
                       key={page}
-                      className={
-                        currentPage === page
-                          ? "pagination-button active"
-                          : "pagination-button"
-                      }
+                      className={getPaginationButtonClasses(
+                        currentPage === page,
+                      )}
                       onClick={() => setCurrentPage(page)}
                     >
                       {page}
@@ -268,7 +286,7 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
               </div>
 
               <button
-                className="pagination-button"
+                className={getPaginationButtonClasses()}
                 onClick={() => setCurrentPage((page) => page + 1)}
                 disabled={currentPage === totalPages}
               >
@@ -278,9 +296,13 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
           )}
         </>
       ) : (
-        <div className="empty-state">
-          <h3>No dishes found</h3>
-          <p>Try another search, cuisine or category.</p>
+        <div className="flex min-h-72.5 flex-col items-center justify-center rounded-xl border border-dashed border-line px-5 py-10 text-center">
+          <h3 className="my-2.5 text-[24px] tracking-[-0.04em]">
+            No dishes found
+          </h3>
+          <p className="mb-5 max-w-115 text-[12px] leading-[1.8] text-muted">
+            Try another search, cuisine or category.
+          </p>
         </div>
       )}
     </section>

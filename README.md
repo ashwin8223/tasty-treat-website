@@ -1,218 +1,184 @@
 # Tasty Treat
 
-### Restaurant Ordering & Management Platform
+**Restaurant Ordering & Management Platform**
 
-**A full-stack restaurant application built to deliver a seamless digital dining experience—from menu discovery and customer authentication to checkout and order management.**
+Tasty Treat is a full-stack restaurant platform focused on the customer ordering journey and the operational foundation behind it. The current application brings menu discovery, customer authentication, cart management, checkout, and order workflows together in a cohesive web experience.
 
-<p align="center">
-  <strong>Next.js 16 · React 19 · TypeScript · Supabase · PostgreSQL</strong>
-</p>
+The platform is being developed with an emphasis on maintainable application boundaries, database-backed business data, server-side validation, and a foundation for a dedicated restaurant operations application.
 
----
-
-## Overview
-
-Tasty Treat is a modern restaurant web application designed to bring the core digital dining experience into one cohesive platform.
-
-The customer-facing application enables users to discover menu items, explore food categories, search for dishes, manage a shopping cart, authenticate securely, and place orders.
-
-The platform is being developed with a focus on maintainable architecture, reliable data handling, secure server-side operations, and a foundation that can support future restaurant administration and operational analytics.
-
-Rather than treating the application as a collection of standalone pages, the project approaches restaurant ordering as an integrated product workflow.
-
-### Product objectives
-
-- Deliver an intuitive, responsive food-ordering experience.
-- Provide a structured and database-driven restaurant menu.
-- Support secure customer authentication and account management.
-- Implement reliable checkout and order-processing workflows.
-- Maintain clear separation between presentation, application logic, and data access.
-- Establish a foundation for restaurant administration and business intelligence.
-
-**Project status:** Active development.
+> **Development status:** Active development. Features are identified below by their current implementation status. The application is not presented as production-ready; payment processing, operational hardening, deployment, and other planned work remain outstanding.
 
 ---
 
-## Product Capabilities
+## Product Scope
 
-The following distinguishes existing implementation from functionality that is still being developed.
+### Customer experience
 
-### Implemented
+- Browse a database-driven menu
+- Explore dishes by cuisine and category
+- Search and paginate menu items
+- Add items to and manage a shopping cart
+- Register and sign in
+- Authenticate with Google OAuth or email/password
+- Recover passwords
+- Proceed through checkout
+- View order history
+- Access reservation-related experiences
 
-- Responsive restaurant website interface.
-- Dynamic menu retrieval from Supabase.
-- Cuisine and category-based menu browsing.
-- Dish search functionality.
-- Menu pagination.
-- Reusable menu cards and interface components.
-- Shopping cart functionality.
-- Checkout interface.
-- Order history interface.
-- Customer login and registration interfaces.
-- Supabase Auth integration.
-- Google OAuth authentication integration.
-- Email/password authentication integration.
-- Password recovery flow integration.
-- Supabase customer identity linkage.
-- Server-side checkout validation.
-- Server-side order creation logic.
+### Current implementation
 
-_Authentication and order workflows have been integrated into the application. End-to-end production readiness and external payment processing remain separate validation tasks._
+| Capability                                                   | Status                               |
+| ------------------------------------------------------------ | ------------------------------------ |
+| Responsive customer website                                  | Implemented                          |
+| Supabase-backed menu retrieval                               | Implemented                          |
+| Cuisine/category filtering, search and pagination            | Implemented                          |
+| Cart interactions                                            | Implemented                          |
+| Checkout UI                                                  | Implemented                          |
+| Order history UI                                             | Implemented                          |
+| Supabase Auth integration                                    | Integrated                           |
+| Google OAuth                                                 | Integrated                           |
+| Email/password authentication                                | Integrated                           |
+| Password recovery flow                                       | Integrated                           |
+| Auth identity ↔ customer record linkage                      | Integrated                           |
+| Server-side checkout validation                              | Implemented                          |
+| Server-side order creation                                   | Implemented                          |
+| Menu-focused chatbot interface/API                           | Present; further development planned |
+| End-to-end authentication and account lifecycle verification | In progress                          |
+| Customer profile/account management                          | In progress                          |
+| Reservation workflow integration                             | In progress                          |
+| Order lifecycle and transaction reliability hardening        | In progress                          |
 
-### In development
+Integration does not by itself establish production readiness. External payment processing, comprehensive end-to-end verification, and production operational controls are not yet complete.
 
-- End-to-end authentication and account lifecycle testing.
-- Customer profile management.
-- Customer-specific data access policies.
-- Reservation workflow integration.
-- Expanded order lifecycle management.
-- Improved error handling and transaction reliability.
+### Planned platform capabilities
 
-### Planned
-
-- Dedicated restaurant administration application.
-- Administrative dashboard and operational analytics.
-- Menu and inventory management.
-- Advanced order management.
-- Online payment gateway integration.
-- AI-powered customer support enhancements.
-- Docker-based deployment workflow.
-- GitHub Actions CI/CD pipeline.
-- Production deployment and monitoring.
-
----
-
-## Technology Stack
-
-| Technology      | Responsibility                                 |
-| --------------- | ---------------------------------------------- |
-| Next.js 16      | Full-stack application framework and routing   |
-| React 19        | Component-based user interface                 |
-| TypeScript      | Static typing and maintainability              |
-| Supabase Auth   | Customer authentication and session management |
-| Supabase        | Backend platform and database connectivity     |
-| PostgreSQL      | Relational data persistence                    |
-| `@supabase/ssr` | Browser and cookie-based server clients        |
-| Google OAuth    | Social authentication provider                 |
-| CSS             | Responsive styling and presentation            |
-| Git & GitHub    | Version control and source management          |
-| Docker          | Planned containerization                       |
-| GitHub Actions  | Planned CI/CD automation                       |
-
-### Development environment
-
-- Visual Studio Code
-- Node.js
-- npm
-- Supabase Dashboard
-- Google Cloud Console
+- Dedicated restaurant administration application
+- Operational dashboard and analytics
+- Menu and inventory management
+- Advanced order and reservation management
+- Online payment gateway
+- Expanded AI-assisted customer support
+- Containerized deployment
+- CI/CD automation
+- Production deployment, monitoring, and operational observability
 
 ---
 
-## System Architecture
+## Technology
 
-The application uses Next.js as its application layer, connecting the customer-facing interface to authentication services and the relational database.
+| Technology          | Role                                                                                      |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| **Next.js 16**      | Full-stack framework, App Router, server rendering and server-side application operations |
+| **React 19**        | UI composition and client-side interactions                                               |
+| **TypeScript**      | Static typing across application code                                                     |
+| **Tailwind CSS 4**  | Utility-first styling and responsive UI implementation                                    |
+| **Supabase**        | Backend platform and application data connectivity                                        |
+| **Supabase Auth**   | Authentication, identity and session management                                           |
+| **PostgreSQL**      | Relational persistence                                                                    |
+| **`@supabase/ssr`** | Cookie-aware browser/server Supabase clients                                              |
+| **Google OAuth**    | Federated authentication                                                                  |
+| **Git / GitHub**    | Version control and source management                                                     |
+| **Docker**          | Planned containerization                                                                  |
+| **GitHub Actions**  | Planned CI/CD automation                                                                  |
 
-### High-level architecture
+---
+
+## Architecture
+
+The customer application is built around the Next.js application layer. UI components and routes interact with server-side application operations, authentication services, and database-backed data access.
 
 ```mermaid
 flowchart TB
-    CUSTOMER["Customer"]
-    BROWSER["Web Browser"]
+    USER["Customer"] --> BROWSER["Browser"]
 
-    subgraph APP["Tasty Treat — Next.js Application"]
-        UI["React UI"]
-        ROUTES["App Router"]
-        COMPONENTS["Reusable Components"]
-        AUTH["Supabase Auth Integration"]
-        ACTIONS["Server Actions"]
-        DATA["Data Access Layer"]
-        PROXY["Session Refresh Proxy"]
+    subgraph WEB["Tasty Treat — Next.js Application"]
+        UI["React UI / Components"]
+        ROUTER["App Router"]
+        AUTH_CLIENT["Supabase Auth Integration"]
+        SERVER_OPS["Server Actions / Server Operations"]
+        DATA_LAYER["Data Access Layer"]
+        SESSION["Session Refresh Proxy"]
     end
 
-    subgraph SERVICES["External Backend Services"]
-        SUPAUTH["Supabase Auth"]
-        DB[("Supabase PostgreSQL")]
+    subgraph BACKEND["Backend Services"]
+        SUPABASE_AUTH["Supabase Auth"]
         GOOGLE["Google OAuth"]
+        DB[("Supabase PostgreSQL")]
     end
 
-    CUSTOMER --> BROWSER
     BROWSER --> UI
-    UI --> COMPONENTS
-    UI --> ROUTES
-    UI --> AUTH
-    UI --> ACTIONS
+    UI --> ROUTER
+    UI --> AUTH_CLIENT
+    UI --> SERVER_OPS
 
-    AUTH <--> SUPAUTH
-    SUPAUTH <--> GOOGLE
-    PROXY <--> SUPAUTH
+    AUTH_CLIENT <--> SUPABASE_AUTH
+    SUPABASE_AUTH <--> GOOGLE
+    SESSION <--> SUPABASE_AUTH
 
-    ACTIONS --> DATA
-    DATA --> DB
-    SUPAUTH -->|"Verified identity"| APP
+    SERVER_OPS --> DATA_LAYER
+    DATA_LAYER --> DB
+    SUPABASE_AUTH -->|"Verified identity"| SERVER_OPS
 ```
 
-### Architectural responsibilities
+### Application boundaries
 
-| Layer             | Responsibility                                      |
-| ----------------- | --------------------------------------------------- |
-| Presentation      | Customer-facing pages, components, and interactions |
-| Routing           | Next.js App Router and server-rendered pages        |
-| Authentication    | Supabase Auth and session handling                  |
-| Application logic | Server Actions and server-side validation           |
-| Data access       | Supabase database operations                        |
-| Persistence       | PostgreSQL relational data model                    |
+| Layer                  | Responsibility                                                 |
+| ---------------------- | -------------------------------------------------------------- |
+| Presentation           | Customer-facing screens, components and interactions           |
+| Routing                | Next.js App Router and page composition                        |
+| Authentication         | Supabase Auth integration and session handling                 |
+| Application operations | Server Actions, server-side validation and business operations |
+| Data access            | Database queries and application data retrieval                |
+| Persistence            | PostgreSQL relational data model                               |
 
-This separation helps keep UI concerns distinct from authentication, business rules, and database operations.
+These boundaries help keep presentation concerns separate from authentication, business validation, and data access.
 
 ---
 
-## Authentication Architecture
+## Authentication & Identity
 
-Customer authentication is handled by Supabase Auth.
-
-The application supports Google OAuth and email/password authentication, with password recovery and session handling integrated into the Next.js application.
+Supabase Auth is used for customer authentication. The application integrates Google OAuth and email/password authentication, with password recovery and cookie-based session handling.
 
 ### Authentication flow
 
 ```mermaid
 sequenceDiagram
     actor Customer
-    participant UI as Next.js Login UI
-    participant Supabase as Supabase Auth
-    participant Provider as Google OAuth
+    participant App as Next.js Application
+    participant Auth as Supabase Auth
+    participant Google as Google OAuth
     participant Callback as Auth Callback
     participant DB as PostgreSQL
 
-    Customer->>UI: Select authentication method
+    Customer->>App: Select sign-in method
 
     alt Google OAuth
-        UI->>Supabase: Initiate OAuth
-        Supabase->>Provider: Redirect to Google
-        Provider-->>Supabase: Return OAuth identity
+        App->>Auth: Start OAuth flow
+        Auth->>Google: Redirect for authorization
+        Google-->>Auth: Return identity
     else Email and password
-        UI->>Supabase: Submit credentials
-        Supabase->>Supabase: Validate credentials
+        App->>Auth: Submit credentials
+        Auth->>Auth: Validate credentials
     end
 
-    Supabase-->>Callback: Return authorization code
-    Callback->>Supabase: Exchange code for session
-    Callback->>Supabase: Verify authenticated user
+    Auth-->>Callback: Return authorization code
+    Callback->>Auth: Exchange code for session
+    Callback->>Auth: Verify authenticated identity
     Callback->>DB: Link or provision customer record
-    DB-->>Callback: Return customer record
-    Callback-->>Customer: Redirect to application
+    DB-->>Callback: Customer record
+    Callback-->>Customer: Redirect into application
 ```
 
 ### Customer identity model
 
-The application maintains a distinction between the Supabase Auth identity and the application's customer record.
+Authentication identity and application customer identity are kept separate:
 
-- Supabase Auth identifies the authenticated user using a UUID.
-- The `customers` table maintains the application's existing numeric customer ID.
-- The `authUserId` field links the customer record to the corresponding Supabase Auth user.
+- Supabase Auth identifies a user with a UUID.
+- The application's `customers` table retains its numeric customer ID.
+- `customers.authUserId` links the customer record to the Supabase Auth identity.
 - Existing customer IDs remain the application-level references used by orders and reservations.
 
-This separation preserves existing relational relationships while introducing Supabase-managed authentication.
+This allows authentication to be integrated without replacing the application's existing relational identifiers.
 
 ```mermaid
 erDiagram
@@ -247,205 +213,141 @@ erDiagram
     }
 ```
 
-_The Auth Users entity represents Supabase's managed authentication records, not a separately maintained application table._
+_`AUTH_USERS` represents Supabase-managed authentication records, not a separately maintained application table._
 
-### Session management
+### Session handling
 
-The application uses Supabase's browser and server client integrations.
-
-- Browser authentication uses the publishable key.
+- Browser authentication uses the publishable Supabase key.
 - Server-side authentication uses cookie-based session handling.
 - The Next.js proxy refreshes authentication cookies.
 - Server-side identity verification uses `supabase.auth.getUser()`.
-
-The proxy handles session refresh; authorization decisions must still be enforced by the relevant server-side operations.
+- Session refresh and authorization are separate concerns; application operations must enforce the relevant authorization and ownership checks.
 
 ---
 
-## Database Architecture
+## Database Model
 
-Supabase PostgreSQL provides relational storage for the application's restaurant and customer data.
-
-The schema separates restaurant catalogue data, customer information, order processing, reservations, and application settings.
+Supabase PostgreSQL provides relational persistence for restaurant, customer, ordering, reservation, and configuration data.
 
 ### Core entities
 
-| Table               | Responsibility                               |
-| ------------------- | -------------------------------------------- |
-| `customers`         | Customer profiles and authentication linkage |
-| `cuisines`          | Cuisine definitions                          |
-| `categories`        | Menu categories associated with cuisines     |
-| `menu`              | Restaurant dishes and availability           |
-| `orders`            | Customer order records                       |
-| `orderItems`        | Individual items associated with an order    |
-| `reservations`      | Customer reservation records                 |
-| `tables`            | Restaurant table information                 |
-| `reservationTables` | Reservation-to-table relationships           |
-| `settings`          | Restaurant operating and pricing settings    |
+| Entity              | Responsibility                                 |
+| ------------------- | ---------------------------------------------- |
+| `customers`         | Customer records and authentication linkage    |
+| `cuisines`          | Cuisine definitions                            |
+| `categories`        | Menu categories associated with cuisines       |
+| `menu`              | Dishes, pricing and availability               |
+| `orders`            | Customer order records                         |
+| `orderItems`        | Items associated with an order                 |
+| `reservations`      | Customer reservation records                   |
+| `tables`            | Restaurant table information                   |
+| `reservationTables` | Reservation-to-table relationships             |
+| `settings`          | Restaurant operating and pricing configuration |
 
-### Relational model
+### Relationship overview
 
 ```mermaid
 flowchart TB
-    CUISINES["cuisines"]
-    CATEGORIES["categories"]
-    MENU["menu"]
+    CUISINES["cuisines"] -->|"1 : many"| CATEGORIES["categories"]
+    CATEGORIES -->|"1 : many"| MENU["menu"]
 
-    CUSTOMERS["customers"]
-    ORDERS["orders"]
-    ITEMS["orderItems"]
+    CUSTOMERS["customers"] -->|"1 : many"| ORDERS["orders"]
+    ORDERS -->|"1 : many"| ORDER_ITEMS["orderItems"]
+    MENU -->|"1 : many"| ORDER_ITEMS
 
-    RESERVATIONS["reservations"]
-    RES_TABLES["reservationTables"]
-    TABLES["tables"]
+    CUSTOMERS -->|"1 : many"| RESERVATIONS["reservations"]
+    RESERVATIONS -->|"1 : many"| RES_TABLES["reservationTables"]
+    TABLES["tables"] -->|"1 : many"| RES_TABLES
 
-    SETTINGS["settings"]
-
-    CUISINES -->|"1 : many"| CATEGORIES
-    CATEGORIES -->|"1 : many"| MENU
-
-    CUSTOMERS -->|"1 : many"| ORDERS
-    ORDERS -->|"1 : many"| ITEMS
-    MENU -->|"1 : many"| ITEMS
-
-    CUSTOMERS -->|"1 : many"| RESERVATIONS
-    RESERVATIONS -->|"1 : many"| RES_TABLES
-    TABLES -->|"1 : many"| RES_TABLES
-
-    SETTINGS -.->|"Application configuration"| ORDERS
+    SETTINGS["settings"] -.-> ORDERS
 ```
 
 ### Data integrity considerations
 
-- Numeric customer IDs remain the application-level customer identifiers.
-- Supabase Auth UUIDs are linked separately through `customers.authUserId`.
+- Application-level customer IDs remain numeric.
+- Supabase Auth UUIDs are linked through `customers.authUserId`.
 - Orders reference customers through `customerId`.
-- Order items reference both orders and menu items.
-- Reservation-table relationships are represented through a junction table.
-- Menu prices and availability are retrieved from the database during order validation.
+- Order items reference orders and menu items.
+- Reservation-table associations use a junction table.
+- Checkout validation retrieves menu pricing and availability from the database.
 - Checkout totals are calculated server-side using database-backed pricing and restaurant settings.
 
 ---
 
 ## Order Processing
 
-Checkout is designed around server-side validation rather than trusting values submitted by the browser.
-
-### Order creation flow
+Checkout is designed to validate submitted data on the server and use authoritative database values rather than trusting client-submitted prices or totals.
 
 ```mermaid
 flowchart TD
-    START["Customer initiates checkout"]
-    AUTH["Verify Supabase user"]
-    CUSTOMER["Retrieve linked customer"]
-    DETAILS["Validate checkout details"]
-    ITEMS["Validate cart items"]
-    PRICE["Retrieve authoritative menu prices"]
-    SETTINGS["Retrieve restaurant settings"]
-    TOTAL["Calculate subtotal, tax and total"]
-    PROFILE["Update customer delivery details"]
-    ORDER["Create order record"]
-    ORDERITEMS["Create order item records"]
-    SUCCESS["Return order confirmation"]
-
-    START --> AUTH
-    AUTH --> CUSTOMER
-    CUSTOMER --> DETAILS
-    DETAILS --> ITEMS
-    ITEMS --> PRICE
-    PRICE --> SETTINGS
-    SETTINGS --> TOTAL
-    TOTAL --> PROFILE
-    PROFILE --> ORDER
-    ORDER --> ORDERITEMS
-    ORDERITEMS --> SUCCESS
+    START["Customer starts checkout"] --> AUTH["Verify authenticated user"]
+    AUTH --> CUSTOMER["Resolve linked customer"]
+    CUSTOMER --> DETAILS["Validate checkout details"]
+    DETAILS --> CART["Validate cart items and quantities"]
+    CART --> PRICE["Retrieve authoritative menu prices"]
+    PRICE --> SETTINGS["Retrieve restaurant settings"]
+    SETTINGS --> TOTAL["Calculate subtotal, tax and total"]
+    TOTAL --> PROFILE["Update customer delivery details"]
+    PROFILE --> ORDER["Create order record"]
+    ORDER --> ITEMS["Create order-item records"]
+    ITEMS --> SUCCESS["Return order confirmation"]
 ```
 
-### Checkout safeguards
+### Current checkout safeguards
 
-- Authenticated user verification on the server.
-- Customer ownership resolved through the Supabase Auth UUID.
-- Input validation for customer and delivery information.
-- Cart item and quantity validation.
-- Duplicate item detection.
-- Menu availability verification.
-- Authoritative price retrieval from PostgreSQL.
-- Server-side calculation of order totals.
-- Restaurant minimum-order and delivery-fee validation.
-- Order creation linked to the existing numeric customer ID.
+- Server-side authenticated-user verification
+- Customer identity resolved through the authenticated identity
+- Input validation for customer and delivery information
+- Cart item and quantity validation
+- Duplicate-item detection
+- Menu availability verification
+- Database-backed price retrieval
+- Server-side total calculation
+- Minimum-order and delivery-fee validation
+- Order creation linked to the existing customer record
 
-_The current order creation implementation uses best-effort cleanup if order-item insertion fails. Full transactional processing and payment reconciliation are future hardening tasks._
+**Known hardening area:** The current implementation uses best-effort cleanup if order-item insertion fails. Full transaction boundaries and payment reconciliation remain future work.
 
 ---
 
-## Security Architecture
+## Security Considerations
 
-Security is treated as an application-wide responsibility rather than an authentication-only concern.
+Security is treated as an application-wide responsibility.
 
-### Current security approach
+### Current approach
 
 - Supabase Auth manages customer identity and authentication sessions.
-- Server-side routes and operations verify authenticated users.
+- Server-side operations verify authenticated users.
 - Customer records are linked using verified authentication identities.
-- Checkout validates user input and database-backed prices on the server.
-- Privileged Supabase credentials are kept in server-only code.
-- Public database access is restricted through configured database policies.
+- Checkout validates user input and database-backed pricing on the server.
+- Privileged Supabase credentials are restricted to server-side code.
+- Database policies are configured to restrict public access.
 
 ### Credential separation
 
-The application uses two categories of Supabase credentials.
+| Credential                 | Purpose                                              | Exposure               |
+| -------------------------- | ---------------------------------------------------- | ---------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project endpoint                            | Public configuration   |
+| `NEXT_PUBLIC_SUPABASE_KEY` | Publishable key for browser and cookie-based clients | Public publishable key |
+| `SUPABASE_KEY`             | Privileged server-side operations                    | Server-only secret     |
 
-| Credential                 | Usage                                   | Exposure               |
-| -------------------------- | --------------------------------------- | ---------------------- |
-| `NEXT_PUBLIC_SUPABASE_KEY` | Browser and cookie-based server clients | Public publishable key |
-| `SUPABASE_KEY`             | Privileged server-side database client  | Server-only secret key |
+The privileged secret must not be exposed through client components, browser requests, public environment variables, or committed source code.
 
-The secret key must never be exposed through client components, browser requests, public environment variables, or committed source code.
-
-### Database access considerations
-
-The privileged server-side Supabase client bypasses Row Level Security.
-
-Consequently:
-
-- Privileged database operations must remain inside trusted server-side code.
-- Server-side operations must verify user identity and resource ownership before accessing customer-specific records.
-- RLS policies must be appropriately configured for any direct client-side database access.
-- Authentication alone does not automatically grant application-level administrative privileges.
-
-Customer and administrator authorization must be explicitly enforced as those capabilities are introduced.
+The privileged server-side client can bypass Row Level Security. Therefore, operations using it must verify identity, authorization, and resource ownership in trusted server-side code. Authentication alone does not confer administrative privileges.
 
 ---
 
-## Project Structure
+## Repository Organization
 
-The application follows the Next.js App Router convention, with reusable components and shared application logic grouped under the application directory.
+The codebase follows the Next.js App Router structure, with reusable components and shared application logic organized under `src/app`.
 
 ```text
-
 tasty-treat-website/
-│
 ├── public/
-│
 ├── src/
 │   ├── proxy.ts
-│   │
 │   └── app/
 │       ├── _components/
-│       │   ├── cart-bottom-bar.tsx
-│       │   ├── cart-provider.tsx
-│       │   ├── chatbot.tsx
-│       │   ├── CheckoutForm.tsx
-│       │   ├── feature-strip.tsx
-│       │   ├── footer.tsx
-│       │   ├── Header.tsx
-│       │   ├── HeaderClient.tsx
-│       │   ├── hero.tsx
-│       │   ├── menu-card.tsx
-│       │   ├── menuClient.tsx
-│       │   ├── page-hero.tsx
-│       │   └── section-title.tsx
-│       │
 │       ├── _lib/
 │       │   ├── actions.ts
 │       │   ├── apiAuth.ts
@@ -453,103 +355,61 @@ tasty-treat-website/
 │       │   ├── supabase-client.ts
 │       │   ├── supabase-server.ts
 │       │   └── supabase.ts
-│       │
 │       ├── _styles/
 │       │   └── globals.css
-│       │
 │       ├── api/
 │       │   └── chatbot/
-│       │       └── menu/
-│       │           └── route.ts
-│       │
 │       ├── auth/
 │       │   └── callback/
-│       │       └── route.ts
-│       │
 │       ├── about/
-│       │   └── page.tsx
 │       ├── cart/
-│       │   └── page.tsx
 │       ├── checkout/
-│       │   ├── page.tsx
-│       │   └── success/
-│       │       └── page.tsx
 │       ├── contact/
-│       │   └── page.tsx
 │       ├── forgot-password/
-│       │   └── page.tsx
 │       ├── login/
-│       │   └── page.tsx
 │       ├── menu/
-│       │   └── page.tsx
 │       ├── orders/
-│       │   └── page.tsx
 │       ├── reservations/
-│       │   └── page.tsx
 │       ├── reset-password/
-│       │   └── page.tsx
-│       │
-│       ├── favicon.ico
 │       ├── layout.tsx
-│       ├── not-found.tsx
-│       └── page.tsx
-│
-├── .env.local
-├── .gitignore
+│       ├── page.tsx
+│       └── not-found.tsx
+├── .env.local                 # Local secrets; never commit
 ├── next.config.ts
 ├── package.json
 └── README.md
-
 ```
 
-_Representative structure based on the current application organization. Additional components and files may exist._
-
-### Code organization
-
-| Directory / File          | Responsibility                             |
-| ------------------------- | ------------------------------------------ |
-| `_components`             | Reusable UI components                     |
-| `_lib/actions.ts`         | Server-side application actions            |
-| `_lib/data-service.ts`    | Data retrieval and validation helpers      |
-| `_lib/supabase.ts`        | Privileged server-side Supabase client     |
-| `_lib/supabase-client.ts` | Browser Supabase client                    |
-| `_lib/supabase-server.ts` | Cookie-based server Supabase client        |
-| `auth/callback`           | OAuth and authentication callback handling |
-| `proxy.ts`                | Authentication cookie/session refresh      |
+_Representative structure; individual files and components may evolve as development continues._
 
 ---
 
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
-- Node.js
+- Node.js (compatible with the project version)
 - npm
 - Git
-- Supabase project
-- Google Cloud OAuth credentials for Google sign-in
+- A Supabase project
+- Google OAuth credentials if Google sign-in is enabled
 
 ### 1. Clone the repository
 
 ```bash
-git clone YOUR_REPOSITORY_URL
-```
-
-### 2. Navigate to the project
-
-```bash
+git clone <repository-url>
 cd tasty-treat-website
 ```
 
-### 3. Install dependencies
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 4. Configure environment variables
+### 3. Configure environment variables
 
-Create `.env.local` in the project root.
+Create `.env.local` in the project root:
 
 ```env
 # Supabase project configuration
@@ -561,21 +421,16 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_KEY=your_supabase_publishable_key
 ```
 
-**Important:**
+Never commit actual credentials or `.env.local`. The privileged secret must only be used in server-side code.
 
-- `SUPABASE_KEY` is a server-only secret key used by privileged server-side operations.
-- `NEXT_PUBLIC_SUPABASE_KEY` is the publishable key used by browser and cookie-based server clients.
-- Never commit `.env.local` or actual credentials to version control.
-- Do not use the secret key in client-side code.
-
-### 5. Configure Supabase Authentication
+### 4. Configure authentication
 
 In the Supabase Dashboard:
 
-1. Enable the required authentication providers.
-2. Configure Google OAuth credentials if Google sign-in is required.
-3. Configure the application Site URL.
-4. Add the local development callback URL to the allowed redirect URLs.
+1. Enable the authentication providers required by the application.
+2. Configure Google OAuth credentials if Google sign-in is used.
+3. Set the application Site URL.
+4. Add the local callback URL to the allowed redirect URLs.
 
 Local callback URL:
 
@@ -583,27 +438,23 @@ Local callback URL:
 http://localhost:3000/auth/callback
 ```
 
-For Google OAuth, configure the Supabase-provided callback URI in Google Cloud Console.
+For Google OAuth, configure the Supabase-provided callback URL in Google Cloud Console.
 
-### 6. Run the development server
+### 5. Start development
 
 ```bash
 npm run dev
 ```
 
-Open:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-http://localhost:3000
-```
-
-### 7. Production build
+### 6. Verify a production build
 
 ```bash
 npm run build
 ```
 
-To run the production build locally:
+Run the production build locally:
 
 ```bash
 npm start
@@ -611,151 +462,123 @@ npm start
 
 ---
 
-## Engineering Practices
+## Engineering Approach
 
-The project follows an incremental engineering approach focused on maintainability, separation of concerns, and reliable application behaviour.
+The implementation is developed incrementally with attention to maintainability and correctness.
 
 ### Current practices
 
-- Component-based UI architecture.
-- TypeScript-based application development.
-- Next.js App Router conventions.
-- Separation of presentation and server-side logic.
-- Reusable data-access functions.
-- Server-side input validation.
-- Database-backed pricing and availability validation.
-- Environment-based configuration.
-- Version control using Git and GitHub.
-- Supabase authentication and session management.
+- Component-based React architecture
+- TypeScript
+- Next.js App Router conventions
+- Tailwind CSS utility-first styling
+- Separation of presentation and server-side operations
+- Reusable data-access functions
+- Server-side input validation
+- Database-backed pricing and availability validation
+- Environment-based configuration
+- Git version control
+- Supabase authentication and session handling
 
-### Planned engineering improvements
+### Engineering work planned
 
-- Automated test coverage.
-- Stronger database transaction boundaries.
-- Expanded authorization policies.
-- Structured application logging.
-- Docker containerization.
-- GitHub Actions build and deployment pipelines.
-- Production monitoring and error reporting.
-
----
-
-## Development Roadmap
-
-| Phase | Deliverable                               | Status                                  |
-| ----- | ----------------------------------------- | --------------------------------------- |
-| 1     | Customer-facing UI and responsive layouts | Implemented                             |
-| 2     | Supabase database integration             | Implemented for current data operations |
-| 3     | Customer authentication integration       | Integrated; validation ongoing          |
-| 4     | Customer profile and account management   | In development                          |
-| 5     | Order processing and lifecycle hardening  | In development                          |
-| 6     | Online payment integration                | Planned                                 |
-| 7     | Restaurant administration application     | Planned                                 |
-| 8     | Operational analytics and reporting       | Planned                                 |
-| 9     | Advanced AI customer support              | Planned                                 |
-| 10    | Docker and CI/CD                          | Planned                                 |
-| 11    | Production deployment and monitoring      | Planned                                 |
+- Automated tests and expanded test coverage
+- Stronger database transaction boundaries
+- Expanded authorization and ownership policies
+- Structured application logging
+- Docker containerization
+- GitHub Actions build/check pipelines
+- Deployment automation
+- Production monitoring and error reporting
 
 ---
 
-## Future Platform Architecture
+## Roadmap
 
-The longer-term direction is to evolve Tasty Treat into two connected application experiences sharing a common backend.
+| Workstream                            | Status                                    |
+| ------------------------------------- | ----------------------------------------- |
+| Customer website and responsive UI    | Implemented                               |
+| Database-backed menu                  | Implemented                               |
+| Cart experience                       | Implemented                               |
+| Authentication integration            | Integrated; end-to-end validation ongoing |
+| Checkout and order creation           | Implemented; hardening ongoing            |
+| Customer account/profile management   | In progress                               |
+| Reservation workflow                  | In progress                               |
+| Online payments                       | Planned                                   |
+| Restaurant administration application | Planned                                   |
+| Operational analytics                 | Planned                                   |
+| Advanced AI customer support          | Planned                                   |
+| Docker workflow                       | Planned                                   |
+| CI/CD automation                      | Planned                                   |
+| Production deployment and monitoring  | Planned                                   |
 
-1. **Customer application:** Menu discovery, authentication, ordering, reservations, and customer account management.
-2. **Administration application:** Restaurant operations, menu management, order management, reservations, and business analytics.
+---
 
-### Target architecture
+## Target Platform Direction
+
+The longer-term architecture is a pair of application experiences connected to shared backend services:
+
+1. **Customer application** — menu discovery, authentication, ordering, reservations, and customer account functionality.
+2. **Restaurant administration application** — operational management, menu and order management, reservations, and analytics.
 
 ```mermaid
 flowchart TB
-    CUSTOMER["Customers"]
-    STAFF["Restaurant Administrators"]
+    CUSTOMER["Customers"] --> CUSTOMER_APP["Customer Application"]
+    STAFF["Restaurant Staff"] --> ADMIN_APP["Administration Application — Planned"]
 
-    subgraph CUSTOMER_APP["Customer Application"]
-        WEB["Next.js Customer Website"]
-        CUSTOMER_AUTH["Supabase Auth"]
-        ORDERING["Ordering and Reservations"]
-    end
+    CUSTOMER_APP --> CUSTOMER_AUTH["Customer Authentication"]
+    CUSTOMER_APP --> CUSTOMER_WORKFLOWS["Ordering / Reservations"]
 
-    subgraph ADMIN_APP["Administration Application — Planned"]
-        DASHBOARD["Admin Dashboard"]
-        ADMIN_AUTH["Supabase Auth"]
-        OPERATIONS["Restaurant Operations"]
-        ANALYTICS["Business Analytics"]
-    end
+    ADMIN_APP --> ADMIN_AUTH["Admin Authentication"]
+    ADMIN_APP --> ADMIN_OPS["Restaurant Operations"]
+    ADMIN_APP --> ANALYTICS["Operational Analytics"]
 
-    subgraph SHARED["Shared Backend"]
-        DATABASE[("Supabase PostgreSQL")]
-        STORAGE["Supabase Storage"]
-    end
+    CUSTOMER_AUTH --> BACKEND[("Shared Supabase Backend")]
+    CUSTOMER_WORKFLOWS --> BACKEND
+    ADMIN_AUTH --> BACKEND
+    ADMIN_OPS --> BACKEND
+    ANALYTICS --> BACKEND
 
-    CUSTOMER --> WEB
-    WEB --> CUSTOMER_AUTH
-    WEB --> ORDERING
-
-    STAFF --> DASHBOARD
-    DASHBOARD --> ADMIN_AUTH
-    DASHBOARD --> OPERATIONS
-    DASHBOARD --> ANALYTICS
-
-    CUSTOMER_AUTH --> DATABASE
-    ADMIN_AUTH --> DATABASE
-    ORDERING --> DATABASE
-    OPERATIONS --> DATABASE
-    ANALYTICS --> DATABASE
-
-    DATABASE --> STORAGE
+    BACKEND --> DB[("PostgreSQL")]
+    BACKEND --> STORAGE["Supabase Storage"]
 ```
 
-The administration application is a planned extension, not a currently completed product component.
-
-Customer and administrative authorization will be separated through explicit role-based access controls and server-side permission checks.
+The administration application is a planned extension, not a completed component. Customer and administrative access will require explicitly separated authorization policies and server-side permission checks.
 
 ---
 
-## Business Value
+## Ownership & Intellectual Property
 
-Tasty Treat is designed around practical restaurant operations rather than a purely demonstrative interface.
+**Tasty Treat and its source code are independently developed and owned by the project author.**
 
-The platform's intended value includes:
+Copyright notice:
 
-- **Customer experience:** A straightforward digital journey from menu discovery to order confirmation.
-- **Operational efficiency:** Centralized menu, order, and reservation data.
-- **Data consistency:** Relational relationships between customers, orders, menu items, and reservations.
-- **Extensibility:** A backend foundation for administration and operational reporting.
-- **Maintainability:** Clear application boundaries and reusable components.
+> Copyright © 2026 Ashwin. All rights reserved.
 
-The architecture is intended to support future customization for restaurant-specific workflows and operational requirements.
+Unless expressly authorized in writing by the copyright owner, no permission is granted to copy, reproduce, redistribute, publish, modify, create derivative works from, sublicense, sell, commercially exploit, or otherwise use this source code or substantial portions of this project.
 
----
+The repository may be publicly viewable for review purposes. **Public visibility does not grant permission to reuse, copy, modify, redistribute, or claim this project or its code as another person's work.**
 
-## Project Focus
+Unauthorized use, reproduction, distribution, or misrepresentation of authorship is prohibited. Contributions, third-party dependencies, and other materials remain subject to their respective terms and licenses.
 
-Tasty Treat is an independently developed full-stack product project intended to demonstrate practical software engineering and product development capabilities.
-
-It brings together:
-
-- Frontend engineering with React and Next.js.
-- Type-safe development with TypeScript.
-- Authentication and session management.
-- Relational database design.
-- Server-side business logic.
-- Checkout and order-processing workflows.
-- Application security considerations.
-- System architecture and future deployment planning.
-
-The project is actively evolving, with a focus on building functionality incrementally and validating each layer before expanding the platform.
+This notice is intended to communicate the project's ownership and restrictions; it is not a substitute for jurisdiction-specific legal advice. For stronger and clearer enforceability, the repository should include a separate proprietary `LICENSE` file reviewed for the applicable jurisdiction and intended commercial use.
 
 ---
 
 ## License
 
-License information will be added when the project's licensing decision is finalized.
+**Proprietary — All Rights Reserved**
+
+No open-source license is granted for this repository. Use, copying, modification, distribution, or commercial exploitation requires prior written permission from the copyright owner.
+
+See the **Ownership & Intellectual Property** section above.
 
 ---
 
-<p align="center">
-  <strong>Tasty Treat</strong><br/>
-  Good food. Great moments.
-</p>
+<div align="center">
+
+**Tasty Treat**
+
+_Good food. Great moments._
+
+</div>

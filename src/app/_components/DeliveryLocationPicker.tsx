@@ -49,7 +49,7 @@ type PhotonFeature = {
   };
 };
 
-// CSS-based marker keeps the marker's appearance in the stylesheet.
+// CSS-based marker keeps the marker's appearance in globals.css.
 const deliveryMarkerIcon = L.divIcon({
   className: "delivery-map-marker",
   html: '<span class="delivery-map-marker__pin" aria-hidden="true"></span>',
@@ -104,7 +104,6 @@ async function reverseGeocode(
     lang: "en",
   });
 
-  // Photon provides OpenStreetMap-based reverse geocoding without a client API key.
   const response = await fetch(
     `https://photon.komoot.io/reverse?${query.toString()}`,
     {
@@ -184,7 +183,6 @@ export default function DeliveryLocationPicker({
     const controller = new AbortController();
     lookupController.current = controller;
 
-    // Send coordinates immediately so they are retained even if address lookup fails.
     onLocationSelect({
       ...nextPosition,
       addressLine: "",
@@ -267,21 +265,23 @@ export default function DeliveryLocationPicker({
   const defaultPosition: LatLngExpression = [13.0827, 80.2707];
 
   return (
-    <div className="delivery-location-picker">
-      <div className="delivery-location-heading">
-        <div className="delivery-location-title">
-          <span className="delivery-location-icon">
+    <div className="w-full min-w-0">
+      <div className="mb-3 flex items-center justify-between gap-3.5 max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-2.25">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="shrink-0 text-accent">
             <MapPin size={19} aria-hidden="true" />
           </span>
 
-          <div className="delivery-location-copy">
-            <h3>Delivery address</h3>
+          <div>
+            <h3 className="m-0 font-sans text-[15px] leading-[1.35] font-bold tracking-[-0.025em] text-foreground">
+              Delivery address
+            </h3>
           </div>
         </div>
 
         <button
           type="button"
-          className="button button-secondary delivery-location-button"
+          className="inline-flex min-h-9.75 shrink-0 items-center justify-center gap-2.5 rounded-lg border border-accent/35 bg-accent/9 px-3.25 font-sans text-[10px] font-bold text-accent-hover transition-[background-color,border-color,transform] duration-200 hover:enabled:-translate-y-px hover:enabled:border-accent hover:enabled:bg-accent/16 disabled:cursor-wait disabled:opacity-65 max-[700px]:min-h-10.5 max-[700px]:w-full"
           onClick={handleCurrentLocation}
           disabled={isLocating}
         >
@@ -290,12 +290,12 @@ export default function DeliveryLocationPicker({
         </button>
       </div>
 
-      <div className="delivery-map-wrapper">
+      <div className="relative isolate h-75 w-full overflow-hidden rounded-[11px] border border-line bg-surface shadow-[0_8px_24px_rgba(0,0,0,0.18)] max-[768px]:h-58.75 max-[480px]:h-53.75">
         <MapContainer
           center={defaultPosition}
           zoom={12}
           scrollWheelZoom={true}
-          className="delivery-map"
+          className="relative z-0 h-full min-h-0 w-full rounded-[inherit] border-0 bg-surface"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -303,7 +303,6 @@ export default function DeliveryLocationPicker({
           />
 
           <MapClickHandler onLocationSelect={handleLocationSelect} />
-
           <MapPositionController position={position} />
 
           {position && (
@@ -324,27 +323,40 @@ export default function DeliveryLocationPicker({
         </MapContainer>
 
         {!position && (
-          <div className="delivery-map-hint">
-            <MapPin size={14} aria-hidden="true" />
+          <div className="pointer-events-none absolute right-3 bottom-7 z-500 inline-flex max-w-[calc(100%-24px)] items-center gap-1.75 rounded-lg border border-white/14 bg-[#101110]/90 px-2.75 py-2 font-sans text-[11px] leading-[1.35] font-[550] text-foreground backdrop-blur-[8px] max-[480px]:right-2 max-[480px]:bottom-6 max-[480px]:px-2.25 max-[480px]:py-1.75 max-[480px]:text-[10px]">
+            <MapPin
+              size={14}
+              className="shrink-0 text-accent"
+              aria-hidden="true"
+            />
             <span>Tap map to place pin</span>
           </div>
         )}
       </div>
 
       {isResolvingAddress && (
-        <p className="form-note" aria-live="polite">
+        <p
+          className="mt-2 text-[9px] leading-[1.6] text-[#858b82]"
+          aria-live="polite"
+        >
           Finding the address for your selected point...
         </p>
       )}
 
       {!isResolvingAddress && addressStatus && (
-        <p className="form-note" aria-live="polite">
+        <p
+          className="mt-2 text-[9px] leading-[1.6] text-[#858b82]"
+          aria-live="polite"
+        >
           {addressStatus}
         </p>
       )}
 
       {error && (
-        <p className="field-error" role="alert">
+        <p
+          className="mt-1.5 block text-[12px] leading-[1.4] text-[#ef6b5b]"
+          role="alert"
+        >
           {error}
         </p>
       )}

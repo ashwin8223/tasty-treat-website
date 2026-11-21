@@ -20,7 +20,6 @@ type CheckoutSuccessPageProps = {
 export default async function CheckoutSuccessPage({
   searchParams,
 }: CheckoutSuccessPageProps) {
-  // Verify the authenticated Supabase user.
   const supabaseServer = await createSupabaseServerClient();
 
   const {
@@ -32,7 +31,6 @@ export default async function CheckoutSuccessPage({
     redirect("/login");
   }
 
-  // Retrieve the existing customer linked to this user.
   const { data: customer, error: customerError } = await supabase
     .from("customers")
     .select("id")
@@ -71,78 +69,102 @@ export default async function CheckoutSuccessPage({
     order.status.charAt(0).toUpperCase() + order.status.slice(1);
 
   return (
-    <section className="container page-content success-page">
-      <div className="success-card">
-        <div className="success-icon">
+    <section className="mx-auto grid min-h-[65vh] w-[min(1160px,calc(100%-48px))] place-items-center pt-18.75 pb-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:pt-13.75 max-[700px]:pb-17.5">
+      <div className="mx-auto w-[min(100%,540px)] rounded-2xl border border-line bg-[radial-gradient(circle_at_50%_0%,rgba(232,117,50,0.1),transparent_36%),var(--surface)] p-10.5 text-center max-[480px]:px-5 max-[480px]:py-7.5">
+        <div className="mx-auto mb-6.25 grid h-19.5 w-19.5 place-items-center rounded-full border border-accent/25 bg-accent/12 text-accent">
           <CheckCircle2 size={42} strokeWidth={1.6} />
         </div>
 
-        <span className="eyebrow">
-          <span className="live-dot" />
+        <span className="inline-flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-accent">
+          <span className="h-1.75 w-1.75 rounded-full bg-accent shadow-[0_0_0_5px_rgba(232,117,50,0.16)]" />
           ORDER PLACED SUCCESSFULLY
         </span>
 
-        <h1 className="success-heading">
+        <h1 className="mt-5.5 mb-3.5 text-[clamp(42px,6vw,58px)] leading-[1.05] tracking-[-0.07em] max-[480px]:text-[43px]">
           Good food is
           <br />
-          <span className="accent">on its way.</span>
+          <span className="text-accent">on its way.</span>
         </h1>
 
-        <p className="success-description">
+        <p className="mx-auto mb-7 max-w-97.5 text-[13px] leading-[1.8] text-muted">
           Thank you for choosing Tasty Treat! Your order has been received, and
-          we're getting things ready for you.
+          we&apos;re getting things ready for you.
         </p>
 
-        <div className="success-order-number">
-          <span>YOUR ORDER NUMBER</span>
-          <strong>{order.orderNumber}</strong>
+        <div className="mb-5.5 grid gap-2.25 rounded-[9px] border border-dashed border-accent/40 bg-surface-2 p-5">
+          <span className="text-[9px] font-[750] tracking-[0.14em] text-muted">
+            YOUR ORDER NUMBER
+          </span>
+          <strong className="text-[20px] tracking-[0.06em] text-accent">
+            {order.orderNumber}
+          </strong>
         </div>
 
-        <div className="success-details">
-          <div className="success-detail">
-            <span>
-              <PackageCheck size={17} />
+        <div className="px-0.75 text-left">
+          <div className="flex items-center justify-between gap-3.75 border-b border-line py-3.75 max-[480px]:gap-2">
+            <span className="inline-flex items-center gap-2.25 text-[11px] text-muted">
+              <PackageCheck size={17} className="text-accent" />
               Order status
             </span>
-            <strong>{orderStatus}</strong>
+            <strong className="text-right text-[11px] capitalize text-foreground">
+              {orderStatus}
+            </strong>
           </div>
 
-          <div className="success-detail">
-            <span>
-              <CreditCard size={17} />
+          <div className="flex items-center justify-between gap-3.75 border-b border-line py-3.75 max-[480px]:gap-2">
+            <span className="inline-flex items-center gap-2.25 text-[11px] text-muted">
+              <CreditCard size={17} className="text-accent" />
               Payment method
             </span>
-            <strong>{paymentMethod}</strong>
+            <strong className="text-right text-[11px] capitalize text-foreground">
+              {paymentMethod}
+            </strong>
           </div>
 
-          <div className="success-detail">
-            <span>Payment status</span>
-            <strong className="success-pending">{order.paymentStatus}</strong>
+          <div className="flex items-center justify-between gap-3.75 border-b border-line py-3.75 max-[480px]:gap-2">
+            <span className="inline-flex items-center gap-2.25 text-[11px] text-muted">
+              Payment status
+            </span>
+            <strong className="text-right text-[11px] capitalize text-accent">
+              {order.paymentStatus}
+            </strong>
           </div>
 
-          <div className="success-detail success-total">
-            <span>Total amount</span>
-            <strong>${Number(order.totalAmount).toFixed(2)}</strong>
+          <div className="flex items-center justify-between gap-3.75 pt-5 pb-3.75 max-[480px]:gap-2">
+            <span className="inline-flex items-center gap-2.25 text-[11px] font-bold text-foreground">
+              Total amount
+            </span>
+            <strong className="text-right text-[19px] text-accent">
+              ${Number(order.totalAmount).toFixed(2)}
+            </strong>
           </div>
         </div>
 
-        <p className="success-note">
+        <p className="mt-3.5 mb-6.25 text-[10px] leading-[1.7] text-muted">
           Demo checkout only. No online payment has been collected.
         </p>
 
-        <div className="success-actions">
-          <Link href="/orders" className="button button-primary button-wide">
+        <div className="grid gap-2.75">
+          <Link
+            href="/orders"
+            className="inline-flex min-h-12.25 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5.25 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover"
+          >
             View my orders
             <ArrowRight size={16} />
           </Link>
 
-          <Link href="/menu" className="button button-ghost button-wide">
+          <Link
+            href="/menu"
+            className="inline-flex min-h-12.25 w-full items-center justify-center gap-2.5 rounded-lg border border-white/35 bg-black/18 px-5.25 text-[13px] font-bold text-white transition-[transform,background-color] duration-200 hover:-translate-y-0.5"
+          >
             <ShoppingBag size={16} />
             Continue exploring
           </Link>
         </div>
 
-        <p className="success-footer">Made with love. Served with care.</p>
+        <p className="mt-6.75 mb-0 text-[10px] tracking-[0.04em] text-[#777d75]">
+          Made with love. Served with care.
+        </p>
       </div>
     </section>
   );

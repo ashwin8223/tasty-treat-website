@@ -27,8 +27,27 @@ function formatStatus(status: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function getStatusBadgeClasses(status: string) {
+  const normalized = String(status)
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
+
+  switch (normalized) {
+    case "delivered":
+      return "bg-[#69c58a]/12 text-[#69c58a]";
+    case "confirmed":
+    case "preparing":
+      return "bg-accent/12 text-accent";
+    case "out-for-delivery":
+      return "bg-[#75b9ef]/12 text-[#75b9ef]";
+    case "cancelled":
+      return "bg-[#e47c7c]/12 text-[#e47c7c]";
+    default:
+      return "bg-surface-2 text-muted";
+  }
+}
+
 export default async function OrdersPage() {
-  // Verify the authenticated Supabase user.
   const supabaseServer = await createSupabaseServerClient();
 
   const {
@@ -40,7 +59,6 @@ export default async function OrdersPage() {
     redirect("/login");
   }
 
-  // Retrieve the existing customer record linked to this user.
   const { data: customer, error: customerError } = await supabase
     .from("customers")
     .select("id")
@@ -66,26 +84,33 @@ export default async function OrdersPage() {
 
   if (!orders || orders.length === 0) {
     return (
-      <section className="container page-content">
-        <span className="eyebrow">YOUR ACCOUNT</span>
+      <section className="mx-auto min-h-[65vh] w-[min(1160px,calc(100%-48px))] pt-18.75 pb-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:pt-13.75 max-[700px]:pb-17.5">
+        <span className="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-accent">
+          YOUR ACCOUNT
+        </span>
 
-        <h1 className="page-heading">
-          Your orders<span className="accent">.</span>
+        <h1 className="mt-3 mb-8.75 text-[clamp(42px,6vw,66px)] tracking-[-0.07em]">
+          Your orders<span className="text-accent">.</span>
         </h1>
 
-        <div className="empty-state">
-          <span className="empty-icon">
+        <div className="flex min-h-72.5 flex-col items-center justify-center rounded-xl border border-dashed border-line px-5 py-10 text-center">
+          <span className="mb-2 text-accent">
             <PackageCheck size={28} />
           </span>
 
-          <h2>No orders yet.</h2>
+          <h2 className="my-2.5 text-[24px] tracking-[-0.04em]">
+            No orders yet.
+          </h2>
 
-          <p>
+          <p className="mb-5 max-w-115 text-[12px] leading-[1.8] text-muted">
             Your next favourite meal is just a few clicks away. Once you place
-            an order, you'll find its details here.
+            an order, you&apos;ll find its details here.
           </p>
 
-          <Link href="/menu" className="button button-primary">
+          <Link
+            href="/menu"
+            className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5.25 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover"
+          >
             Explore the menu <ArrowUpRight size={16} />
           </Link>
         </div>
@@ -129,18 +154,20 @@ export default async function OrdersPage() {
   }
 
   return (
-    <section className="container page-content orders-page">
-      <span className="eyebrow">YOUR ACCOUNT</span>
+    <section className="mx-auto min-h-[65vh] w-[min(1160px,calc(100%-48px))] pt-18.75 pb-25 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:pt-13.75 max-[700px]:pb-17.5">
+      <span className="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-accent">
+        YOUR ACCOUNT
+      </span>
 
-      <h1 className="page-heading">
-        Your orders<span className="accent">.</span>
+      <h1 className="mt-3 mb-8.75 text-[clamp(42px,6vw,66px)] tracking-[-0.07em]">
+        Your orders<span className="text-accent">.</span>
       </h1>
 
-      <p className="orders-description">
+      <p className="-mt-3 mb-8 text-[13px] leading-[1.7] text-muted">
         Keep track of your orders and revisit your favourite meals.
       </p>
 
-      <div className="orders-list">
+      <div className="grid gap-5">
         {orders.map((order) => {
           const items = orderItemsMap.get(order.id) ?? [];
 
@@ -149,39 +176,44 @@ export default async function OrdersPage() {
               ? "Cash on delivery"
               : "Online payment";
 
-          const statusClass = String(order.status)
-            .toLowerCase()
-            .replace(/[^a-z0-9-]/g, "-");
-
           return (
-            <article className="order-card" key={order.id}>
-              <div className="order-card-header">
+            <article
+              className="rounded-xl border border-line bg-surface p-6.25 max-[520px]:p-4.5"
+              key={order.id}
+            >
+              <div className="flex items-start justify-between gap-3.75 border-b border-line pb-5 max-[520px]:flex-col">
                 <div>
-                  <span className="order-label">ORDER NUMBER</span>
-                  <h2>{order.orderNumber}</h2>
+                  <span className="text-[9px] font-bold tracking-[0.13em] text-muted">
+                    ORDER NUMBER
+                  </span>
+                  <h2 className="mt-1.75 text-[17px] text-foreground">
+                    {order.orderNumber}
+                  </h2>
                 </div>
 
-                <span className={`order-status status-${statusClass}`}>
+                <span
+                  className={`rounded-[30px] px-2.75 py-1.75 text-[10px] font-[650] whitespace-nowrap ${getStatusBadgeClasses(order.status)}`}
+                >
                   {formatStatus(order.status)}
                 </span>
               </div>
 
-              <div className="order-meta">
-                <span>
-                  <Clock3 size={15} />
+              <div className="flex flex-wrap gap-5 py-4 max-[520px]:gap-3">
+                <span className="flex items-center gap-2 text-[11px] text-muted">
+                  <Clock3 size={15} className="text-accent" />
                   {dateFormatter.format(new Date(order.created_at))}
                 </span>
 
-                <span>
-                  <CreditCard size={15} />
+                <span className="flex items-center gap-2 text-[11px] text-muted">
+                  <CreditCard size={15} className="text-accent" />
                   {paymentMethod}
                 </span>
               </div>
 
-              <div className="order-items">
+              <div className="grid gap-3.25 border-y border-line py-4.5">
                 {items.map((item) => (
                   <div
-                    className="order-item"
+                    className="flex items-center justify-between gap-3.75 text-[12px] text-muted"
                     key={`${order.id}-${item.menuItemId}`}
                   >
                     <span>
@@ -189,28 +221,30 @@ export default async function OrdersPage() {
                       {menuMap.get(item.menuItemId) ?? "Menu item"}
                     </span>
 
-                    <strong>
+                    <strong className="text-[12px] text-foreground">
                       {currencyFormatter.format(Number(item.totalPrice))}
                     </strong>
                   </div>
                 ))}
 
                 {!items.length && (
-                  <p className="order-items-empty">
+                  <p className="text-[11px] text-muted">
                     Order item details are unavailable.
                   </p>
                 )}
               </div>
 
-              <div className="order-card-footer">
-                <div className="order-payment">
-                  <span>Payment status</span>
-                  <strong>{formatStatus(order.paymentStatus)}</strong>
+              <div className="flex items-center justify-between gap-3.75 pt-4.5 max-[520px]:items-end">
+                <div className="grid gap-1.5">
+                  <span className="text-[10px] text-muted">Payment status</span>
+                  <strong className="text-[11px] capitalize text-foreground">
+                    {formatStatus(order.paymentStatus)}
+                  </strong>
                 </div>
 
-                <div className="order-total">
-                  <span>Total</span>
-                  <strong>
+                <div className="grid gap-1.5 text-right">
+                  <span className="text-[10px] text-muted">Total</span>
+                  <strong className="text-[20px] text-accent">
                     {currencyFormatter.format(Number(order.totalAmount))}
                   </strong>
                 </div>
@@ -220,8 +254,11 @@ export default async function OrdersPage() {
         })}
       </div>
 
-      <div className="orders-bottom-link">
-        <Link href="/menu" className="button button-primary">
+      <div className="mt-8.75 flex justify-center">
+        <Link
+          href="/menu"
+          className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5.25 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover"
+        >
           <ShoppingBag size={16} />
           Order something delicious
           <ArrowUpRight size={16} />
