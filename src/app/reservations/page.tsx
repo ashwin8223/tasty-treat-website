@@ -1,13 +1,110 @@
-import { CalendarDays, Clock3, Users } from "lucide-react";
+"use client";
+
+import { useRef, useState } from "react";
+
+import { Clock3, Users } from "lucide-react";
+
 import { PageHero } from "../_components/PageHero";
 
-const fieldClasses =
-  "w-full rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent";
+import {
+  privateDiningGuestOptions,
+  partyHallGuestOptions,
+  regularGuestOptions,
+  reservationExperiences,
+  reservationTimeOptions,
+} from "@/app/_lib/reservation-config";
 
-const labelClasses =
-  "flex flex-col gap-2 text-[11px] font-[650] text-[#d4d7d0]";
+import type { ReservationType } from "@/app/_lib/reservation-types";
+import { ReservationForm } from "../_components/ReservationForm";
+import { ReservationExperiences } from "../_components/ReservationExperiences";
 
 export default function ReservationsPage() {
+  const [reservationType, setReservationType] =
+    useState<ReservationType>("regular-table");
+
+  const [guestCount, setGuestCount] = useState("");
+  const [reservationTime, setReservationTime] = useState("");
+  const [reservationDate, setReservationDate] = useState<Date | undefined>();
+
+  const [specialRequests, setSpecialRequests] = useState("");
+
+  const lastAutoRequestRef = useRef("");
+  const reservationFormRef = useRef<HTMLDivElement>(null);
+
+  const selectedExperience = reservationExperiences.find(
+    (experience) => experience.id === reservationType,
+  );
+
+  const guestOptions =
+    reservationType === "private-dining"
+      ? privateDiningGuestOptions
+      : reservationType === "party-hall"
+        ? partyHallGuestOptions
+        : regularGuestOptions;
+
+  function selectExperience(type: ReservationType) {
+    // Selecting the current experience toggles it off.
+    if (reservationType === type) {
+      setReservationType("regular-table");
+
+      // Remove generated text only if it hasn't been edited.
+      if (specialRequests === lastAutoRequestRef.current) {
+        setSpecialRequests("");
+      }
+
+      lastAutoRequestRef.current = "";
+
+      // Reset guests if the selection is outside the
+      // regular reservation range.
+      if (Number(guestCount) > 8 || guestCount === "50+") {
+        setGuestCount("");
+      }
+
+      return;
+    }
+
+    setReservationType(type);
+
+    // Validate the current guest count against the
+    // newly selected experience's available options.
+    if (type === "private-dining") {
+      if (
+        guestCount === "" ||
+        Number(guestCount) < 2 ||
+        Number(guestCount) > 12 ||
+        guestCount === "50+"
+      ) {
+        setGuestCount("");
+      }
+    } else if (type === "party-hall") {
+      if (guestCount === "" || Number(guestCount) < 8 || guestCount === "50+") {
+        setGuestCount("");
+      }
+    }
+
+    const newTemplate =
+      reservationExperiences.find((experience) => experience.id === type)
+        ?.requestTemplate ?? "";
+
+    // Replace the previous template if it remains unchanged.
+    if (
+      specialRequests === "" ||
+      specialRequests === lastAutoRequestRef.current
+    ) {
+      setSpecialRequests(newTemplate);
+    } else {
+      // Preserve the user's manually written requests.
+      setSpecialRequests(`${specialRequests.trim()}\n\n${newTemplate}`);
+    }
+
+    lastAutoRequestRef.current = newTemplate;
+
+    reservationFormRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   return (
     <>
       <PageHero
@@ -16,141 +113,75 @@ export default function ReservationsPage() {
         description="Planning a catch-up, a celebration or just a lovely meal? We'd love to have you."
       />
 
-      <section className="mx-auto grid w-[min(1160px,calc(100%-48px))] grid-cols-[0.8fr_1.2fr] items-start gap-17.5 py-25 max-[950px]:gap-7.5 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:grid-cols-1 max-[700px]:gap-7.5 max-[700px]:py-17">
-        <div className="sticky top-30 max-[700px]:static">
-          <span className="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-accent">
-            THE DETAILS
-          </span>
-          <h2 className="my-3.5 text-[48px] leading-[1.05] tracking-[-0.06em] max-[700px]:text-[40px]">
-            Your table,
-            <br />
-            <em className="not-italic text-accent">your moment.</em>
-          </h2>
-          <p className="mb-8.75 max-w-82.5 text-[13px] leading-[1.8] text-muted">
-            Send us your preferred date and time. Our team will confirm your
-            reservation shortly.
-          </p>
-
-          <div className="flex items-center gap-2.5 border-t border-line py-3.75 text-[11px] text-[#c3c6bf]">
-            <Clock3 className="text-accent" /> Opening hours{" "}
-            <span className="ml-auto text-muted">11:00 AM – 10:00 PM</span>
-          </div>
-
-          <div className="flex items-center gap-2.5 border-t border-line py-3.75 text-[11px] text-[#c3c6bf]">
-            <Users className="text-accent" /> Group bookings{" "}
-            <span className="ml-auto text-muted">Contact us for 8+</span>
-          </div>
-        </div>
-
-        <form
-          className="rounded-xl border border-line bg-surface p-7.5 max-[700px]:p-5.5"
-          action="#"
+      <section className="mx-auto w-[min(1160px,calc(100%-48px))] py-20 max-[700px]:w-[min(calc(100%-32px),560px)] max-[700px]:py-12">
+        {/* Main reservation */}
+        <div
+          ref={reservationFormRef}
+          className="scroll-mt-24 grid grid-cols-[0.8fr_1.2fr] items-start gap-16 max-[950px]:gap-8 max-[700px]:grid-cols-1 max-[700px]:gap-7"
         >
-          <div className="mb-6.25 flex items-center gap-3.5">
-            <CalendarDays className="shrink-0 text-accent" />
-            <div>
-              <h2 className="mt-0 mb-1.5 font-sans text-[18px] leading-[1.3] font-bold tracking-[-0.035em] text-foreground">
-                Request a reservation
-              </h2>
-              <p className="m-0 font-sans text-[11px] leading-[1.6] text-muted">
-                Fields marked * are required.
-              </p>
+          {/* Information column */}
+          <div className="sticky top-30 max-[700px]:static">
+            <span className="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] text-accent">
+              MAKE IT HAPPEN
+            </span>
+
+            <h2 className="my-3.5 text-[48px] leading-[1.05] tracking-[-0.06em] max-[950px]:text-[40px] max-[700px]:my-2.5 max-[700px]:text-[34px]">
+              Your table,
+              <br />
+              <em className="not-italic text-accent">your moment.</em>
+            </h2>
+
+            <p className="mb-8 max-w-82.5 text-[13px] leading-[1.8] text-muted max-[700px]:mb-5 max-[700px]:max-w-none max-[700px]:text-[12px]">
+              Whether it&apos;s a casual meal, a family get-together or a
+              special occasion, tell us when you&apos;d like to visit and
+              we&apos;ll take care of the rest.
+            </p>
+
+            <div className="flex items-center gap-2.5 border-t border-line py-3.5 text-[11px] text-[#c3c6bf]">
+              <Clock3 size={16} className="shrink-0 text-accent" />
+              <span>Opening hours</span>
+
+              <span className="ml-auto text-muted">11 AM – 10 PM</span>
+            </div>
+
+            <div className="flex items-center gap-2.5 border-t border-line py-3.5 text-[11px] text-[#c3c6bf]">
+              <Users size={16} className="shrink-0 text-accent" />
+              <span>Large groups</span>
+
+              <span className="ml-auto text-muted">8+ guests</span>
+            </div>
+
+            <div className="border-t border-line py-3.5 text-[11px] leading-[1.7] text-muted">
+              For larger gatherings, private dining or celebrations, explore our
+              special experiences below.
             </div>
           </div>
 
-          <div className="my-5.5 grid grid-cols-2 gap-4.25 max-[700px]:grid-cols-1">
-            <label className={labelClasses}>
-              Full name *
-              <input
-                required
-                placeholder="Your name"
-                className={fieldClasses}
-              />
-            </label>
+          {/* Reservation form */}
+          <ReservationForm
+            reservationType={reservationType}
+            guestCount={guestCount}
+            reservationDate={reservationDate}
+            reservationTime={reservationTime}
+            specialRequests={specialRequests}
+            guestOptions={guestOptions}
+            timeOptions={reservationTimeOptions}
+            experienceTitle={selectedExperience?.title}
+            experienceIcon={selectedExperience?.icon}
+            onGuestCountChange={setGuestCount}
+            onReservationDateChange={setReservationDate}
+            onReservationTimeChange={setReservationTime}
+            onSpecialRequestsChange={setSpecialRequests}
+            onRemoveExperience={() => selectExperience(reservationType)}
+          />
+        </div>
 
-            <label className={labelClasses}>
-              Email address *
-              <input
-                type="email"
-                required
-                placeholder="you@example.com"
-                className={fieldClasses}
-              />
-            </label>
-
-            <label className={labelClasses}>
-              Phone number
-              <input
-                type="tel"
-                placeholder="+1 000 000 0000"
-                className={fieldClasses}
-              />
-            </label>
-
-            <label className={labelClasses}>
-              Number of guests *
-              <select required defaultValue="" className={fieldClasses}>
-                <option value="" disabled>
-                  Select guests
-                </option>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                  <option key={n} value={n}>
-                    {n} {n === 1 ? "guest" : "guests"}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={labelClasses}>
-              Date *<input type="date" required className={fieldClasses} />
-            </label>
-
-            <label className={labelClasses}>
-              Preferred time *
-              <select required defaultValue="" className={fieldClasses}>
-                <option value="" disabled>
-                  Select time
-                </option>
-                {[
-                  "11:00 AM",
-                  "12:00 PM",
-                  "1:00 PM",
-                  "2:00 PM",
-                  "5:00 PM",
-                  "6:00 PM",
-                  "7:00 PM",
-                  "8:00 PM",
-                  "9:00 PM",
-                ].map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </label>
-
-            <label
-              className={`${labelClasses} col-span-full max-[700px]:col-auto`}
-            >
-              Anything we should know?
-              <textarea
-                rows={4}
-                placeholder="Special occasion, seating preference..."
-                className={fieldClasses}
-              />
-            </label>
-          </div>
-
-          <button
-            className="mt-2.5 inline-flex min-h-12 items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5.25 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
-            type="submit"
-          >
-            Request a table
-          </button>
-
-          <p className="mt-3 text-[9px] leading-[1.6] text-[#858b82]">
-            Demo form only — connect this to your reservation backend before
-            launch.
-          </p>
-        </form>
+        {/* Special experiences */}
+        <ReservationExperiences
+          experiences={reservationExperiences}
+          selectedExperience={reservationType}
+          onSelect={selectExperience}
+        />
       </section>
     </>
   );

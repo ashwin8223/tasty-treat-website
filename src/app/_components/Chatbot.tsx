@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import type { MenuItem } from "../_lib/data-service";
 import { useCart } from "./CartProvider";
 import Image from "next/image";
 
-// Hydration-safe check that allows the chatbot to render through a portal
-// only after the component has mounted in the browser.
+// Provides a client-only mount signal so the portal is rendered after hydration.
 function subscribeToMount() {
   return () => {};
 }
@@ -35,12 +35,14 @@ type Message = {
   items?: MenuItem[];
 };
 
+// Quick prompts shown before the visitor sends their first message.
 const suggestedQuestions = [
   "What can I order?",
   "How do I place an order?",
   "How can I track my order?",
 ];
 
+// Internal pages the assistant can recommend to visitors.
 const chatbotLinks: ChatLink[] = [
   { label: "Explore Menu", href: "/menu" },
   { label: "View Cart", href: "/cart" },
@@ -49,370 +51,331 @@ const chatbotLinks: ChatLink[] = [
   { label: "Contact Us", href: "/contact" },
 ];
 
+// Returns true when the message matches at least one pattern in a group.
 function matchesPatterns(query: string, patterns: RegExp[]) {
   return patterns.some((pattern) => pattern.test(query));
 }
 
-function getBotReply(message: string): string {
-  const query = message
+type ChatIntent = {
+  patterns: RegExp[];
+  reply: string;
+};
+
+// Defines supported conversation topics and phrases that identify each topic.
+// Add or adjust an intent here instead of expanding the message handler.
+const chatIntents: ChatIntent[] = [
+  {
+    patterns: [
+      /^(hi|hello|hey|greetings|howdy)$/,
+      /^(good morning|good afternoon|good evening)$/,
+    ],
+    reply:
+      "Hey! 😊 Welcome to Tasty Treat. What sounds good today? I can help you explore dishes, choose something, or guide you through ordering.",
+  },
+  {
+    patterns: [
+      /\b(who are you|what are you|introduce yourself|what can you do|how can you help)\b/,
+    ],
+    reply:
+      "I'm Tasty Assistant, your guide around Tasty Treat. I can help you discover food, narrow down menu choices, explain how ordering works, and find the right page. Tell me what you're looking for and we'll figure it out together.",
+  },
+  {
+    patterns: [
+      /^(thanks|thank you|thank you so much)$/,
+      /\b(that helps|very helpful|thanks for your help)\b/,
+    ],
+    reply:
+      "You're very welcome! 😊 Let me know if you need help choosing something else.",
+  },
+  {
+    patterns: [/^(bye|goodbye|see you|see you later)$/],
+    reply:
+      "See you! Thanks for visiting Tasty Treat. Hope you find something delicious! 🍽️",
+  },
+  {
+    patterns: [
+      /\b(menu|food options|what do you serve|what do you have|what can i eat|what can i order)\b/,
+      /\b(show|see|view|browse|explore)\s+(the\s+)?menu\b/,
+    ],
+    reply:
+      "Let's find something you’ll enjoy! Browse the menu, or tell me what you're craving—something spicy, light, filling, vegetarian, a dessert, or a particular cuisine—and I'll narrow it down.",
+  },
+  {
+    patterns: [
+      /\b(vegetarian|veg food|veg dishes|pure veg|do you have veg|show veg)\b/,
+    ],
+    reply:
+      "Absolutely! 🌱 I can help you look for vegetarian choices. Do you feel like having a starter, a main course, something quick, or dessert? You can also ask me for options within a budget.",
+  },
+  {
+    patterns: [
+      /\b(non vegetarian|non veg|nonveg|meat dishes|do you have non veg|show non veg)\b/,
+    ],
+    reply:
+      "Sure! If you're looking for non-vegetarian dishes, tell me whether you're in the mood for something crispy, spicy, hearty, or quick. I can filter the available menu options for you.",
+  },
+  {
+    patterns: [
+      /\b(ingredients|what is in|what s in|contain|contains|allergy|allergic|allergen|food allergy)\b/,
+    ],
+    reply:
+      "I can help you understand the menu descriptions, but I can't reliably verify allergens or cross-contamination. If you have an allergy, please confirm directly with the restaurant team before ordering so they can check the ingredients and preparation.",
+  },
+  {
+    patterns: [
+      /\b(spicy|spice level|hot food|mild food|less spicy|not spicy|no spice)\b/,
+    ],
+    reply:
+      "Got it—spice level is important. I can help you look for dishes that sound suitable, but please confirm any special spice request with the restaurant before placing your order.",
+  },
+  {
+    patterns: [
+      /\b(how to order|how do i order|place an order|ordering process|how can i buy|how can i purchase)\b/,
+    ],
+    reply:
+      "It's easy: choose dishes from the menu, add them to your cart, review your selections, then continue to checkout. Enter your delivery details and follow the payment options shown to complete your order.",
+  },
+  {
+    patterns: [
+      /\b(add to cart|add item|add food|add dish|how do i add|how can i add)\b/,
+    ],
+    reply:
+      "Tap **Add to Cart** on the dish you want. You can also add a recommendation directly from this chat when I show you menu items.",
+  },
+  {
+    patterns: [
+      /\b(view cart|open cart|my cart|shopping cart|cart items|items in cart|cart contents)\b/,
+    ],
+    reply:
+      "Your cart is where you can review your selections, change quantities, remove items, and continue to checkout when you're ready.",
+  },
+  {
+    patterns: [
+      /\b(remove from cart|delete from cart|clear cart|empty cart|change quantity|update quantity|increase quantity|decrease quantity)\b/,
+    ],
+    reply:
+      "Open your cart to manage your selections. You can adjust quantities or remove dishes before checking out.",
+  },
+  {
+    patterns: [
+      /\b(checkout|check out|proceed to payment|complete my order|finish my order)\b/,
+    ],
+    reply:
+      "When you're ready, continue from your cart to checkout. Review the order, confirm your delivery details, and choose an available payment method before placing it.",
+  },
+  {
+    patterns: [
+      /\b(delivery address|change address|address details|where do you deliver|add my address|update my address)\b/,
+    ],
+    reply:
+      "You can enter your delivery address during checkout. Make sure the address and contact details are correct before confirming your order.",
+  },
+  {
+    patterns: [/\b(minimum order|minimum amount|min order|minimum purchase)\b/],
+    reply:
+      "I don't want to guess the minimum order amount. Check your cart or checkout page for the requirement currently applicable to your order.",
+  },
+  {
+    patterns: [
+      /\b(delivery fee|delivery charge|shipping fee|delivery cost|is delivery free|free delivery)\b/,
+    ],
+    reply:
+      "Any delivery fee that applies should be shown during checkout before you confirm the order. That's the best place to check the current amount.",
+  },
+  {
+    patterns: [
+      /\b(delivery area|delivery locations|delivery zone|deliver to my area|available in my area|do you deliver to)\b/,
+    ],
+    reply:
+      "Delivery availability depends on your location. Enter your address at checkout to see whether delivery is available for your area.",
+  },
+  {
+    patterns: [
+      /\b(delivery time|how long|when will.*arrive|when.*delivered|estimated delivery|delivery duration|waiting time)\b/,
+    ],
+    reply:
+      "Delivery time can vary based on your location and the order. Check the estimate shown during checkout, if available, for the most relevant timing.",
+  },
+  {
+    patterns: [
+      /\b(delivery rider|delivery person|driver|rider details|contact rider|rider contact)\b/,
+    ],
+    reply:
+      "For an ongoing delivery, check your order details in My Orders first. If you still need help, contact the restaurant team with your order reference.",
+  },
+  {
+    patterns: [
+      /\b(payment methods|how can i pay|payment options|ways to pay|accepted payments|payment types)\b/,
+    ],
+    reply:
+      "The payment methods currently available for your order are listed at checkout. You can review them before confirming your purchase.",
+  },
+  {
+    patterns: [/\b(cash on delivery|cod|pay on delivery|cash payment)\b/],
+    reply:
+      "Cash on Delivery depends on whether it's enabled for your order. Check the payment options at checkout to see if it's available.",
+  },
+  {
+    patterns: [
+      /\b(online payment|pay online|card payment|credit card|debit card|upi)\b/,
+    ],
+    reply:
+      "Check checkout for the online payment options supported right now. The methods displayed there are the ones available for your order.",
+  },
+  {
+    patterns: [
+      /\b(payment failed|payment failure|transaction failed|payment error|payment unsuccessful|money deducted)\b/,
+    ],
+    reply:
+      "I'm sorry—that's frustrating. First, check with your bank or payment provider to see whether the transaction succeeded. If money was deducted but your order wasn't confirmed, contact support with the transaction reference. Avoid retrying until you've checked the first payment's status.",
+  },
+  {
+    patterns: [
+      /\b(refund|money back|refund status|refund process|cancelled order refund|canceled order refund)\b/,
+    ],
+    reply:
+      "I can't verify a live refund status from here. Please contact support with your order reference and payment details so they can investigate.",
+  },
+  {
+    patterns: [
+      /\b(track my order|track order|order tracking|where is my order|order status|delivery status|order progress)\b/,
+    ],
+    reply:
+      "You can check the latest status in **My Orders**. Open the relevant order to see its details and progress.",
+  },
+  {
+    patterns: [
+      /\b(order history|previous orders|past orders|my orders|orders i ve placed|orders i placed)\b/,
+    ],
+    reply:
+      "Your order history is available in **My Orders**. You can open individual orders there to view their details.",
+  },
+  {
+    patterns: [
+      /\b(cancel order|cancel my order|cancellation|can i cancel|how to cancel)\b/,
+    ],
+    reply:
+      "Cancellation depends on the order's current status. Open it in My Orders to see whether cancellation is available. If you need help, contact support as soon as possible.",
+  },
+  {
+    patterns: [
+      /\b(edit order|modify order|change my order|update my order|change items in order|add item to existing order)\b/,
+    ],
+    reply:
+      "Changes may not be possible once an order is placed. If you need to change something, contact the restaurant team as soon as possible and share your order reference.",
+  },
+  {
+    patterns: [
+      /\b(order id|order number|order reference|order confirmation)\b/,
+    ],
+    reply:
+      "Your order reference should be available in the order confirmation and in My Orders. Keep it handy when contacting support.",
+  },
+  {
+    patterns: [
+      /\b(sign in|signin|log in|login|my account|account access|create account|register|sign up|signup)\b/,
+    ],
+    reply:
+      "Use the account page to sign in or create an account. Once signed in, you'll be able to access the account and order features available in the app.",
+  },
+  {
+    patterns: [/\b(sign out|signout|log out|logout)\b/],
+    reply:
+      "You can sign out from the account menu in the header. On mobile, open the navigation menu to find the account options.",
+  },
+  {
+    patterns: [/\b(google login|sign in with google|google authentication)\b/],
+    reply:
+      "If Google sign-in is enabled, you'll see that option on the sign-in page. Otherwise, use the sign-in method presented there.",
+  },
+  {
+    patterns: [
+      /\b(opening hours|business hours|working hours|operating hours|when are you open|when do you close|are you open)\b/,
+    ],
+    reply:
+      "I don't have confirmed live opening hours. Check the restaurant information on the website or contact the team for the latest schedule.",
+  },
+  {
+    patterns: [
+      /\b(location|restaurant address|where are you located|your address|restaurant location|physical address)\b/,
+    ],
+    reply:
+      "I don't want to share an unverified address. Please visit Contact Us for the restaurant's location and contact details.",
+  },
+  {
+    patterns: [
+      /\b(contact|customer support|customer service|help desk|speak to someone|talk to a person|human support)\b/,
+    ],
+    reply:
+      "Of course. Visit Contact Us to find the available ways to reach the restaurant team.",
+  },
+  {
+    patterns: [
+      /\b(feedback|suggestion|review|compliment|share my experience|give feedback)\b/,
+    ],
+    reply:
+      "We'd love to hear your thoughts! Visit Contact Us and share your feedback or suggestion with the team.",
+  },
+  {
+    patterns: [
+      /\b(website not working|site not working|page not loading|website error|bug|technical issue|something went wrong)\b/,
+    ],
+    reply:
+      "Sorry you're running into that. Try refreshing the page once. If the problem continues, contact support and tell them which page you were using and what happened.",
+  },
+  {
+    patterns: [/\b(are you human|real person|are you a bot|are you ai)\b/],
+    reply:
+      "I'm Tasty Assistant—a chatbot built into Tasty Treat. I can help with common questions and use the menu information available to this app, but I'm not a human or an AI language model yet.",
+  },
+  {
+    patterns: [
+      /\b(do you remember|what did i ask|remember my previous|can you understand me)\b/,
+    ],
+    reply:
+      "I can follow the messages in this chat, but I don't have long-term memory or full AI conversation understanding yet. If I misunderstand, rephrase it or add a little context and I'll try to help.",
+  },
+];
+
+// Standardizes input so intent matching is insensitive to casing and punctuation.
+function normalizeMessage(message: string) {
+  return message
     .toLowerCase()
     .trim()
     .replace(/[^\w\s]/g, " ")
     .replace(/\s+/g, " ");
-
-  const matches = (patterns: RegExp[]) => matchesPatterns(query, patterns);
-
-  // Greetings and conversation basics.
-  if (
-    matches([
-      /^(hi|hello|hey|greetings)$/,
-      /^(good morning|good afternoon|good evening)$/,
-      /^(hi|hello|hey) there$/,
-      /^(howdy|what s up)$/,
-    ])
-  ) {
-    return "Hey! Welcome to Tasty Treat 😊 What are you in the mood for today? I can help you find something to eat, understand how ordering works, or point you to the right place on the site.";
-  }
-
-  if (
-    matches([
-      /\b(who are you|what are you|introduce yourself)\b/,
-      /\b(what can you do|how can you help)\b/,
-    ])
-  ) {
-    return "I'm Tasty Assistant, the helper here at Tasty Treat. I can help you explore the menu, find dishes that fit your preferences, explain how to order, and point you towards your cart or orders. What would you like to do?";
-  }
-
-  if (
-    matches([
-      /^(thanks|thank you|thank you so much)$/,
-      /\b(thanks for your help|that helps|very helpful)\b/,
-    ])
-  ) {
-    return "You're welcome! Glad I could help. If anything else comes up while you're browsing, just ask.";
-  }
-
-  if (matches([/^(bye|goodbye|see you|see you later)$/])) {
-    return "See you later! Thanks for stopping by Tasty Treat. Hope you find something delicious for your next meal!";
-  }
-
-  // Menu discovery and food preferences.
-  if (
-    matches([
-      /\b(menu|food menu|food options|what do you serve|what do you have)\b/,
-      /\b(show|see|view|browse|explore)\s+(the\s+)?menu\b/,
-      /\b(what can i eat|what can i order)\b/,
-    ])
-  ) {
-    return "Of course! Have a look through our menu to see what's available. If you tell me what you're craving, your dietary preference, or roughly how much you'd like to spend, I can narrow down some options for you.";
-  }
-
-  if (
-    matches([
-      /\b(vegetarian|veg food|veg dishes|pure veg)\b/,
-      /\b(do you have veg|show veg|vegetarian options)\b/,
-    ])
-  ) {
-    return "Absolutely. If you're looking for vegetarian food, I can help narrow down the available dishes. Do you have a particular category in mind, such as starters, pizza, pasta, or dessert?";
-  }
-
-  if (
-    matches([
-      /\b(non vegetarian|non veg|nonveg|meat dishes)\b/,
-      /\b(do you have non veg|show non veg)\b/,
-    ])
-  ) {
-    return "Sure! I can look for non-vegetarian options in the menu. Are you in the mood for a particular type of dish, or would you like to see a few options?";
-  }
-
-  if (
-    matches([
-      /\b(ingredients|what is in|what s in|contain|contains)\b/,
-      /\b(allergy|allergic|allergen|food allergy)\b/,
-    ])
-  ) {
-    return "The menu descriptions may help with general ingredient information. If this is about an allergy, please don't rely on the chatbot to confirm whether a dish is safe. Contact the restaurant team before ordering so they can check the ingredients and preparation process with you.";
-  }
-
-  if (
-    matches([
-      /\b(spicy|spice level|hot food|mild food|less spicy)\b/,
-      /\b(not spicy|no spice)\b/,
-    ])
-  ) {
-    return "Got it — spice level matters. Check the dish description for any details provided, and if you need a dish to be mild or have a specific spice requirement, please confirm with the restaurant team before ordering.";
-  }
-
-  // Cart and ordering journey.
-  if (
-    matches([
-      /\b(how to order|how do i order|place an order|ordering process)\b/,
-      /\b(how can i buy|how can i purchase)\b/,
-    ])
-  ) {
-    return "It's straightforward: browse the menu, add the dishes you want to your cart, and open your cart to review everything. When you're ready, continue to checkout, enter your delivery details, and follow the payment options shown there.";
-  }
-
-  if (
-    matches([
-      /\b(add to cart|add item|add food|add dish)\b/,
-      /\b(how do i add|how can i add)\b/,
-    ])
-  ) {
-    return "You can add a dish from its menu card using the Add to Cart button. If I've shown you a recommendation here, you can add it directly from that card too.";
-  }
-
-  if (
-    matches([
-      /\b(view cart|open cart|my cart|shopping cart)\b/,
-      /\b(cart items|items in cart|cart contents)\b/,
-    ])
-  ) {
-    return "You can review your selected dishes in your cart. From there, you can check the quantities, update or remove items, and continue to checkout whenever you're ready.";
-  }
-
-  if (
-    matches([
-      /\b(remove from cart|delete from cart|clear cart|empty cart)\b/,
-      /\b(change quantity|update quantity|increase quantity|decrease quantity)\b/,
-    ])
-  ) {
-    return "Open your cart to manage the items you've selected. You can adjust quantities or remove dishes before moving on to checkout.";
-  }
-
-  if (
-    matches([
-      /\b(checkout|check out|proceed to payment|place my order)\b/,
-      /\b(complete my order|finish my order)\b/,
-    ])
-  ) {
-    return "When you're ready, head to checkout from your cart. Review your order, add your delivery details, and choose from the payment methods available there before confirming.";
-  }
-
-  // Delivery information.
-  if (
-    matches([
-      /\b(delivery address|change address|address details|where do you deliver)\b/,
-      /\b(add my address|update my address)\b/,
-    ])
-  ) {
-    return "You can enter your delivery address during checkout. Take a moment to check the address and contact details before placing the order so the team has the right information.";
-  }
-
-  if (
-    matches([/\b(minimum order|minimum amount|min order|minimum purchase)\b/])
-  ) {
-    return "I don't want to guess at the minimum order amount because it can depend on the current setup. Please check the cart or checkout page for the requirement that applies to your order.";
-  }
-
-  if (
-    matches([
-      /\b(delivery fee|delivery charge|shipping fee|delivery cost)\b/,
-      /\b(is delivery free|free delivery)\b/,
-    ])
-  ) {
-    return "Any delivery charge that applies should be shown during checkout before you confirm the order. That's the best place to check the amount for your delivery.";
-  }
-
-  if (
-    matches([
-      /\b(delivery area|delivery locations|delivery zone|deliver to my area)\b/,
-      /\b(available in my area|do you deliver to)\b/,
-    ])
-  ) {
-    return "Delivery availability depends on the address. Enter your location during checkout to see whether delivery is available for your area.";
-  }
-
-  if (
-    matches([
-      /\b(delivery time|how long|when will.*arrive|when.*delivered)\b/,
-      /\b(estimated delivery|delivery duration|waiting time)\b/,
-    ])
-  ) {
-    return "Delivery time can vary with the destination and order conditions. Please check the estimate shown during checkout, if one is provided, for the most relevant information.";
-  }
-
-  if (
-    matches([
-      /\b(delivery rider|delivery person|driver|rider details)\b/,
-      /\b(contact rider|rider contact)\b/,
-    ])
-  ) {
-    return "If you need help with an ongoing delivery, check the order details in My Orders first. If the information there doesn't answer your question, contact the support team for assistance.";
-  }
-
-  // Payments and refunds.
-  if (
-    matches([
-      /\b(payment methods|how can i pay|payment options|ways to pay)\b/,
-      /\b(accepted payments|payment types)\b/,
-    ])
-  ) {
-    return "The payment methods supported for your order will be listed at checkout. You can review the available options there before confirming.";
-  }
-
-  if (matches([/\b(cash on delivery|cod|pay on delivery|cash payment)\b/])) {
-    return "Cash on Delivery may depend on the options enabled for the order. Please check the payment choices shown at checkout to see whether it's available.";
-  }
-
-  if (
-    matches([
-      /\b(online payment|pay online|card payment|credit card|debit card|upi)\b/,
-    ])
-  ) {
-    return "You can see the supported online payment methods at checkout. The options displayed there are the ones currently available to use.";
-  }
-
-  if (
-    matches([
-      /\b(payment failed|payment failure|transaction failed|payment error)\b/,
-      /\b(payment unsuccessful|money deducted)\b/,
-    ])
-  ) {
-    return "Sorry that happened. First, check the transaction status with your bank or payment provider. If money was deducted but the order wasn't confirmed, please contact the support team with the transaction reference. Avoid trying the payment again until you've checked whether the first transaction went through.";
-  }
-
-  if (
-    matches([
-      /\b(refund|money back|refund status|refund process)\b/,
-      /\b(cancelled order refund|canceled order refund)\b/,
-    ])
-  ) {
-    return "I can point you in the right direction, but I can't check a live refund status here. Please contact the support team with your order reference and payment details so they can look into it.";
-  }
-
-  // Orders and account.
-  if (
-    matches([
-      /\b(track my order|track order|order tracking|where is my order)\b/,
-      /\b(order status|delivery status|order progress)\b/,
-    ])
-  ) {
-    return "You can check the latest available status in My Orders. Open the order you're interested in to see its details and progress.";
-  }
-
-  if (
-    matches([
-      /\b(order history|previous orders|past orders|my orders)\b/,
-      /\b(orders i ve placed|orders i placed)\b/,
-    ])
-  ) {
-    return "Your previous orders are available in My Orders. Open that page to browse your order history and view individual order details.";
-  }
-
-  if (
-    matches([
-      /\b(cancel order|cancel my order|cancellation)\b/,
-      /\b(can i cancel|how to cancel)\b/,
-    ])
-  ) {
-    return "Cancellation options can depend on the order's current status. Please open the order in My Orders and check whether cancellation is available. If it isn't, contact the support team as soon as possible.";
-  }
-
-  if (
-    matches([
-      /\b(edit order|modify order|change my order|update my order)\b/,
-      /\b(change items in order|add item to existing order)\b/,
-    ])
-  ) {
-    return "Changes to an order may not be possible after it's placed. If you need to change something, contact the support team as soon as you can and share your order reference.";
-  }
-
-  if (
-    matches([/\b(order id|order number|order reference|order confirmation)\b/])
-  ) {
-    return "Your order reference should be included in the order confirmation and available from the My Orders section. You can use it when contacting support too.";
-  }
-
-  if (
-    matches([
-      /\b(sign in|signin|log in|login|my account|account access)\b/,
-      /\b(create account|register|sign up|signup)\b/,
-    ])
-  ) {
-    return "You can sign in or create an account from the account page. Once you're signed in, you'll be able to access the account and order features available to you.";
-  }
-
-  if (matches([/\b(sign out|signout|log out|logout)\b/])) {
-    return "You can sign out from the account menu in the header. If you're on a smaller screen, open the mobile navigation to find the sign-out option.";
-  }
-
-  if (
-    matches([/\b(google login|sign in with google|google authentication)\b/])
-  ) {
-    return "If Google sign-in is enabled for this version of Tasty Treat, you'll see the Google option on the sign-in page. Otherwise, use the sign-in method shown there.";
-  }
-
-  // Restaurant information and support.
-  if (
-    matches([
-      /\b(opening hours|business hours|working hours|operating hours)\b/,
-      /\b(when are you open|when do you close|are you open)\b/,
-    ])
-  ) {
-    return "I don't have confirmed live opening hours to share. Please check the restaurant information on the website or contact the team for the latest hours.";
-  }
-
-  if (
-    matches([
-      /\b(location|restaurant address|where are you located|your address)\b/,
-      /\b(restaurant location|physical address)\b/,
-    ])
-  ) {
-    return "I don't want to give you an unverified address. Please check the Contact Us page for the restaurant's location and contact information.";
-  }
-
-  if (
-    matches([
-      /\b(contact|customer support|customer service|help desk)\b/,
-      /\b(speak to someone|talk to a person|human support)\b/,
-    ])
-  ) {
-    return "Of course. If you'd rather speak with the team, head to the Contact Us page for the available support options.";
-  }
-
-  if (
-    matches([
-      /\b(feedback|suggestion|review|compliment)\b/,
-      /\b(share my experience|give feedback)\b/,
-    ])
-  ) {
-    return "We'd love to hear your feedback. Visit the Contact Us page and share your experience or suggestion with the team.";
-  }
-
-  if (
-    matches([
-      /\b(website not working|site not working|page not loading|website error)\b/,
-      /\b(bug|technical issue|something went wrong)\b/,
-    ])
-  ) {
-    return "Sorry you're running into trouble. Try refreshing the page once. If it keeps happening, contact the support team and mention what you were doing when the issue appeared.";
-  }
-
-  // Navigation and chatbot identity.
-  if (
-    matches([
-      /\b(go to menu|open menu page|menu page)\b/,
-      /\b(go to cart|open cart page|cart page)\b/,
-      /\b(go to checkout|checkout page)\b/,
-      /\b(go to orders|orders page|my orders page)\b/,
-    ])
-  ) {
-    return "Sure — use the shortcut below to jump straight to the section you're looking for.";
-  }
-
-  if (matches([/\b(are you human|real person|are you a bot|are you ai)\b/])) {
-    return "I'm Tasty Assistant, an automated helper for Tasty Treat. I use predefined guidance and the menu information available to this app, so I can help with common questions, but I'm not a human or a full LLM assistant.";
-  }
-
-  if (matches([/\b(can you understand me|do you remember|what did i ask)\b/])) {
-    return "I can use the messages in this chat to respond to your current question, but I don't have full conversational memory like a large language model. If I miss what you mean, try adding a little more detail and I'll do my best to help.";
-  }
-
-  // Friendly fallback that invites a useful clarification.
-  return "I might have missed what you mean. Are you asking about the menu, placing an order, delivery, payment, or an existing order? A little more detail will help me point you in the right direction.";
 }
 
+function getBotReply(message: string): string {
+  const query = normalizeMessage(message);
+  const intent = chatIntents.find(({ patterns }) =>
+    patterns.some((pattern) => pattern.test(query)),
+  );
+
+  if (intent) return intent.reply;
+
+  // Provides a contextual fallback when the message does not match a supported intent.
+  const topicHints: Record<string, string> = {
+    menu: "menu and dishes",
+    food: "food and menu choices",
+    order: "placing or managing an order",
+    delivery: "delivery details",
+    payment: "payments",
+    account: "your account",
+    cart: "your cart",
+    price: "prices and budget",
+  };
+
+  const topic = Object.entries(topicHints).find(([keyword]) =>
+    query.includes(keyword),
+  )?.[1];
+
+  return topic
+    ? `I understand you're asking about ${topic}. I may not have the exact answer for that yet, but I can help with the common options or guide you to the right page. Could you tell me a little more about what you need?`
+    : "I may not have understood that completely, but I'm happy to help. You can ask me in your own words about food, menu choices, ordering, delivery, payments, or your orders—or tell me what you're trying to do and I'll guide you from there.";
+}
+
+// Detects requests that should use live menu data rather than a static response.
 function isRecommendationQuery(message: string) {
   const query = message.toLowerCase();
 
@@ -425,6 +388,7 @@ function isRecommendationQuery(message: string) {
   ]);
 }
 
+// Extracts a numeric budget from common phrases such as "under 500" or "below ₹500".
 function getBudget(message: string): number | null {
   const query = message.toLowerCase();
 
@@ -439,6 +403,7 @@ function getBudget(message: string): number | null {
   return Number.isFinite(budget) && budget > 0 ? budget : null;
 }
 
+// Filters available menu items by dietary preference, budget, and category.
 function getRecommendations(
   menuItems: MenuItem[],
   message: string,
@@ -503,6 +468,7 @@ function getRecommendations(
     .slice(0, 4);
 }
 
+// Selects navigation links relevant to the visitor's message.
 function getRelevantLinks(message: string): ChatLink[] {
   const query = message.toLowerCase();
 
@@ -529,38 +495,7 @@ function getRelevantLinks(message: string): ChatLink[] {
   return [];
 }
 
-const welcomeStorageKey = "tasty-treat-chatbot-welcome-shown";
-
-function playWelcomeChime() {
-  try {
-    const AudioContextClass = window.AudioContext;
-    if (!AudioContextClass) return;
-
-    const audioContext = new AudioContextClass();
-    if (audioContext.state === "suspended") {
-      void audioContext.resume().catch(() => {});
-    }
-
-    const now = audioContext.currentTime;
-    const gain = audioContext.createGain();
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
-    gain.connect(audioContext.destination);
-
-    const oscillator = audioContext.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, now);
-    oscillator.frequency.setValueAtTime(1174.66, now + 0.12);
-    oscillator.connect(gain);
-    oscillator.start(now);
-    oscillator.stop(now + 0.34);
-    oscillator.onended = () => void audioContext.close().catch(() => {});
-  } catch {
-    // Browsers may block audio until the visitor interacts with the page.
-  }
-}
-
+// Manages chat state, recommendations, route-aware opening, and the chat interface.
 export function Chatbot() {
   const isMounted = useSyncExternalStore(
     subscribeToMount,
@@ -568,9 +503,12 @@ export function Chatbot() {
     getServerSnapshot,
   );
 
+  const pathname = usePathname();
+
   const { lines, addItem, updateQuantity } = useCart();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [openRoute, setOpenRoute] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -585,35 +523,6 @@ export function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const replyTimeoutRef = useRef<number | null>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
-  const welcomeAutoOpenedRef = useRef(false);
-
-  useEffect(() => {
-    if (!isMounted) return;
-
-    try {
-      if (window.localStorage.getItem(welcomeStorageKey)) return;
-    } catch {
-      // If storage is unavailable, still provide the welcome experience this visit.
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      if (welcomeAutoOpenedRef.current) return;
-      welcomeAutoOpenedRef.current = true;
-      setIsOpen(true);
-
-      try {
-        window.localStorage.setItem(welcomeStorageKey, "true");
-      } catch {
-        // Ignore storage restrictions.
-      }
-
-      playWelcomeChime();
-    }, 2200);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [isMounted]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -647,6 +556,7 @@ export function Chatbot() {
     };
   }, []);
 
+  // Handles typed messages and quick prompts, then routes to a static reply or menu search.
   async function sendMessage(message?: string) {
     const text = (message ?? input).trim();
 
@@ -730,6 +640,7 @@ export function Chatbot() {
     }
   }
 
+  // Submits the current input without triggering a page reload.
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void sendMessage();
@@ -742,7 +653,7 @@ export function Chatbot() {
       ref={chatbotRef}
       className="fixed right-4 bottom-[calc(92px+env(safe-area-inset-bottom))] z-100 font-sans md:right-7 md:bottom-7"
     >
-      {isOpen && (
+      {isOpen && openRoute === pathname && (
         <section
           aria-label="Tasty Treat virtual assistant"
           className="absolute bottom-19 right-0 flex h-137.5 max-h-[calc(100dvh-130px)] w-95 max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[15px] border border-white/10 bg-surface shadow-[0_20px_70px_rgba(0,0,0,0.45)] max-[480px]:fixed max-[480px]:bottom-[calc(160px+env(safe-area-inset-bottom))] max-[480px]:right-3 max-[480px]:h-[min(550px,calc(100dvh-115px))] max-[480px]:w-[calc(100vw-24px)]"
@@ -960,26 +871,39 @@ export function Chatbot() {
       <button
         type="button"
         onClick={() => {
-          if (!isOpen) {
-            welcomeAutoOpenedRef.current = true;
-            try {
-              window.localStorage.setItem(welcomeStorageKey, "true");
-            } catch {
-              // Ignore storage restrictions.
-            }
-          }
-          setIsOpen((current) => !current);
+          const isOpenOnCurrentRoute = isOpen && openRoute === pathname;
+
+          setIsOpen(!isOpenOnCurrentRoute);
+          setOpenRoute(isOpenOnCurrentRoute ? null : pathname);
         }}
-        aria-label={isOpen ? "Close chat" : "Open chat"}
-        aria-expanded={isOpen}
+        aria-label={
+          isOpen && openRoute === pathname ? "Close chat" : "Open chat"
+        }
+        aria-expanded={isOpen && openRoute === pathname}
         className={`relative ml-auto grid size-15 place-items-center rounded-full border-0 bg-accent text-[#17130f] shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-all duration-200 hover:-translate-y-1 hover:bg-accent-hover max-[480px]:size-14 ${
           isOpen
             ? "border border-white/10 bg-surface-2 text-foreground hover:bg-surface-2"
             : ""
         }`}
       >
-        {isOpen ? <X size={24} /> : <MessageCircle size={25} />}
-        {!isOpen && (
+        {!(isOpen && openRoute === pathname) && (
+          <>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full border-2 border-accent/70 animate-ping"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full border-2 border-accent/50 animate-ping [animation-delay:1.2s]"
+            />
+          </>
+        )}
+        {isOpen && openRoute === pathname ? (
+          <X size={24} />
+        ) : (
+          <MessageCircle size={25} />
+        )}
+        {!(isOpen && openRoute === pathname) && (
           <span className="absolute right-0.75 top-0.75 size-3 rounded-full border-2 border-background bg-[#8cc58a]" />
         )}
       </button>
