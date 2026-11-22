@@ -8,7 +8,6 @@ import { Header } from "./_components/Header";
 import { Footer } from "./_components/Footer";
 import { Chatbot } from "./_components/Chatbot";
 
-
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
