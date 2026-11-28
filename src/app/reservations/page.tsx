@@ -9,7 +9,8 @@ export default async function ReservationsPage() {
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError) {
+  // A missing session is expected for guest reservations.
+  if (authError && authError.name !== "AuthSessionMissingError") {
     console.error("Failed to retrieve authenticated user:", authError);
   }
 
