@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
+import { Controller, useFormContext, useWatch } from "react-hook-form";
 
 import { ArrowRight, CalendarDays } from "lucide-react";
 
@@ -12,28 +13,27 @@ import type {
 import { ReservationDropdown } from "./ReservationDropdown";
 import { ReservationDatePicker } from "./ReservationDatePicker";
 
+export type ReservationFormValues = {
+  reservationType: ReservationType;
+  guestCount: string;
+  reservationDate: Date | undefined;
+  reservationTime: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  specialRequests: string;
+};
+
 type ExperienceIcon = ComponentType<{
   size?: number;
   className?: string;
 }>;
 
 type ReservationFormProps = {
-  reservationType: ReservationType;
-  guestCount: string;
-  reservationDate: Date | undefined;
-  reservationTime: string;
-  specialRequests: string;
-
   guestOptions: DropdownOption[];
   timeOptions: DropdownOption[];
-
   experienceTitle?: string;
   experienceIcon?: ExperienceIcon;
-
-  onGuestCountChange: (value: string) => void;
-  onReservationDateChange: (date: Date | undefined) => void;
-  onReservationTimeChange: (value: string) => void;
-  onSpecialRequestsChange: (value: string) => void;
   onRemoveExperience: () => void;
 };
 
@@ -43,41 +43,52 @@ const fieldClasses =
 const labelClasses =
   "flex flex-col gap-2 text-[11px] font-[650] text-[#d4d7d0]";
 
+const errorClasses = "text-[10px] text-red-400";
+
+function isTodayOrFuture(date: Date) {
+  const selectedDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return selectedDate >= today;
+}
+
 export function ReservationForm({
-  reservationType,
-  guestCount,
-  reservationDate,
-  reservationTime,
-  specialRequests,
   guestOptions,
   timeOptions,
   experienceTitle,
   experienceIcon: ExperienceIcon,
-  onGuestCountChange,
-  onReservationDateChange,
-  onReservationTimeChange,
-  onSpecialRequestsChange,
   onRemoveExperience,
 }: ReservationFormProps) {
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useFormContext<ReservationFormValues>();
+
+  const reservationType = useWatch({
+    control,
+    name: "reservationType",
+  });
+
   const isRegularReservation = reservationType === "regular-table";
+
+  function onSubmit(_data: ReservationFormValues) {
+    // Reservation backend integration will be implemented next.
+  }
 
   return (
     <form
       className="rounded-xl border border-line bg-surface p-7 max-[950px]:p-5 max-[700px]:p-4"
-      action="#"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
     >
-      <input type="hidden" name="reservationType" value={reservationType} />
-
-      <input
-        type="hidden"
-        name="reservationDate"
-        value={reservationDate?.toISOString() ?? ""}
-      />
-
-      <input type="hidden" name="guestCount" value={guestCount} />
-
-      <input type="hidden" name="reservationTime" value={reservationTime} />
-
       {/* Form heading */}
       <div className="mb-6 flex items-center gap-3 max-[700px]:mb-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10">
@@ -122,91 +133,188 @@ export function ReservationForm({
 
       {/* Booking details */}
       <div className="grid grid-cols-2 gap-4 max-[700px]:gap-3">
+        {/* Guest count */}
         <label className={labelClasses}>
           {isRegularReservation ? "Number of guests *" : "Estimated guests *"}
 
-          <ReservationDropdown
-            placeholder="Select guests"
-            options={guestOptions}
-            value={guestCount}
-            onChange={onGuestCountChange}
+          <Controller
+            name="guestCount"
+            control={control}
+            rules={{
+              required: "Please select the number of guests.",
+              validate: (value) =>
+                guestOptions.some((option) => option.value === value) ||
+                "Please select a valid guest count.",
+            }}
+            render={({ field }) => (
+              <ReservationDropdown
+                placeholder="Select guests"
+                options={guestOptions}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
+
+          {errors.guestCount && (
+            <span className={errorClasses}>{errors.guestCount.message}</span>
+          )}
         </label>
 
+        {/* Date */}
         <label className={labelClasses}>
           {isRegularReservation ? "Date *" : "Preferred date *"}
 
-          <ReservationDatePicker
-            value={reservationDate}
-            onChange={onReservationDateChange}
+          <Controller
+            name="reservationDate"
+            control={control}
+            rules={{
+              required: "Please select a reservation date.",
+              validate: (date) =>
+                (date && isTodayOrFuture(date)) ||
+                "Please choose today or a future date.",
+            }}
+            render={({ field }) => (
+              <ReservationDatePicker
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
+
+          {errors.reservationDate && (
+            <span className={errorClasses}>
+              {errors.reservationDate.message}
+            </span>
+          )}
         </label>
 
+        {/* Time */}
         <label className={labelClasses}>
           Preferred time *
-          <ReservationDropdown
-            placeholder="Select time"
-            options={timeOptions}
-            value={reservationTime}
-            onChange={onReservationTimeChange}
+          <Controller
+            name="reservationTime"
+            control={control}
+            rules={{
+              required: "Please select a preferred time.",
+              validate: (value) =>
+                timeOptions.some((option) => option.value === value) ||
+                "Please select a valid time.",
+            }}
+            render={({ field }) => (
+              <ReservationDropdown
+                placeholder="Select time"
+                options={timeOptions}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
+          {errors.reservationTime && (
+            <span className={errorClasses}>
+              {errors.reservationTime.message}
+            </span>
+          )}
         </label>
 
+        {/* Name */}
         <label className={labelClasses}>
           Full name *
           <input
-            name="fullName"
-            required
+            {...register("fullName", {
+              required: "Please enter your name.",
+              validate: (value) =>
+                value.trim().length >= 2 ||
+                "Name must contain at least 2 characters.",
+            })}
             placeholder="Your name"
             className={fieldClasses}
+            aria-invalid={Boolean(errors.fullName)}
           />
+          {errors.fullName && (
+            <span className={errorClasses}>{errors.fullName.message}</span>
+          )}
         </label>
 
+        {/* Email */}
         <label className={labelClasses}>
           Email address *
           <input
-            name="email"
+            {...register("email", {
+              required: "Please enter your email address.",
+              validate: (value) =>
+                /^\S+@\S+\.\S+$/.test(value.trim()) ||
+                "Please enter a valid email address.",
+            })}
             type="email"
-            required
             placeholder="you@example.com"
             className={fieldClasses}
+            aria-invalid={Boolean(errors.email)}
           />
+          {errors.email && (
+            <span className={errorClasses}>{errors.email.message}</span>
+          )}
         </label>
 
+        {/* Phone */}
         <label className={labelClasses}>
           Phone number
           <input
-            name="phone"
+            {...register("phone", {
+              validate: (value) =>
+                value.trim() === "" ||
+                /^[+]?[\d\s().-]{7,20}$/.test(value.trim()) ||
+                "Please enter a valid phone number.",
+            })}
             type="tel"
             placeholder="+1 000 000 0000"
             className={fieldClasses}
+            aria-invalid={Boolean(errors.phone)}
           />
+          {errors.phone && (
+            <span className={errorClasses}>{errors.phone.message}</span>
+          )}
         </label>
 
+        {/* Special requests */}
         <label className={`${labelClasses} col-span-full`}>
           {isRegularReservation
             ? "Special requests"
             : "Tell us more about your enquiry"}
 
           <textarea
-            name="specialRequests"
+            {...register("specialRequests", {
+              maxLength: {
+                value: 1000,
+                message: "Please keep your request under 1000 characters.",
+              },
+            })}
             rows={4}
-            value={specialRequests}
-            onChange={(event) => onSpecialRequestsChange(event.target.value)}
             placeholder="Birthday, anniversary, seating preference, dietary requirements..."
             className={`${fieldClasses} resize-y`}
           />
+
+          {errors.specialRequests && (
+            <span className={errorClasses}>
+              {errors.specialRequests.message}
+            </span>
+          )}
         </label>
       </div>
 
       {/* Submit */}
       <button
-        className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover"
+        className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent bg-accent px-5 text-[13px] font-bold text-[#17130f] transition-[transform,background-color] duration-200 hover:-translate-y-0.5 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
         type="submit"
+        disabled={isSubmitting}
       >
-        {isRegularReservation ? "Request a table" : "Send enquiry"}
+        {isSubmitting
+          ? "Submitting..."
+          : isRegularReservation
+            ? "Request a table"
+            : "Send enquiry"}
 
-        <ArrowRight size={15} />
+        {!isSubmitting && <ArrowRight size={15} />}
       </button>
 
       <p className="mt-3 text-center text-[9px] leading-[1.6] text-[#858b82]">

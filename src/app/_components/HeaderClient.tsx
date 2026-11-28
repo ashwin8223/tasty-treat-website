@@ -12,10 +12,11 @@ import {
   PackageCheck,
   LayoutDashboard,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useCart } from "./CartProvider";
 import { logout } from "../_lib/apiAuth";
+import { useClickOutside } from "../_hooks/useClickOutside";
 
 const links = [
   { href: "/", label: "Home" },
@@ -44,37 +45,31 @@ export function HeaderClient({ user }: HeaderClientProps) {
 
   const displayName = user?.name?.trim() || "there";
 
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        accountRef.current &&
-        !accountRef.current.contains(event.target as Node)
-      ) {
-        accountRef.current.open = false;
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && accountRef.current) {
-        accountRef.current.open = false;
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  function closeMenus() {
-    setOpen(false);
-
+  const closeAccountMenu = useCallback(() => {
     if (accountRef.current) {
       accountRef.current.open = false;
     }
+  }, []);
+
+  useClickOutside(accountRef, closeAccountMenu);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeAccountMenu();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeAccountMenu]);
+
+  function closeMenus() {
+    setOpen(false);
+    closeAccountMenu();
   }
 
   async function handleSignOut() {

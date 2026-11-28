@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type SubmitEvent, useState } from "react";
+import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
+import { useForm } from "react-hook-form";
+
 import { useCart } from "./CartProvider";
 import { createOrder } from "../_lib/actions";
 import type { RestaurantSettings } from "../_lib/data-service";
@@ -26,30 +28,19 @@ type CheckoutFormProps = {
   settings: RestaurantSettings;
 };
 
-type CheckoutErrors = {
-  fullName?: string;
-  phone?: string;
-  city?: string;
-  address?: string;
+type CheckoutFormValues = {
+  fullName: string;
+  phone: string;
+  city: string;
+  address: string;
+  orderNotes: string;
+  payment: "cod" | "online";
 };
-
-const checkoutLabelClasses =
-  "flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5]";
-
-const checkoutInputClasses =
-  "min-h-11.25 w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-[invalid=true]:border-[#ef6b5b] max-[480px]:min-h-10.75";
-
-const checkoutTextareaClasses = `${checkoutInputClasses} min-h-22 resize-y max-[480px]:min-h-20.5`;
-
-const checkoutRadioRowClasses =
-  "my-2 flex min-h-11.75 cursor-pointer flex-row items-center gap-2.5 rounded-[9px] border border-line bg-white/[0.018] px-3.25 py-2.75 text-[11px] font-semibold text-[#e2e3de] transition-colors duration-180 has-[input:checked]:border-accent/55 has-[input:checked]:bg-accent/[0.075]";
 
 export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
   const { lines, subtotal } = useCart();
   const router = useRouter();
 
-  const [errors, setErrors] = useState<CheckoutErrors>({});
-  const [isPending, setIsPending] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
@@ -57,8 +48,22 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [city, setCity] = useState("");
-  const [address, setAddress] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CheckoutFormValues>({
+    defaultValues: {
+      fullName: "",
+      phone: "",
+      city: "",
+      address: "",
+      orderNotes: "",
+      payment: "cod",
+    },
+  });
 
   const orderData = {
     items: lines.map(({ item, quantity }) => ({
@@ -81,7 +86,6 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
 
   const minimumOrderNotMet = subtotal < settings.minimumOrderAmount;
 
-  // Show the redirect screen before checking whether the cart is empty.
   if (isRedirecting) {
     return (
       <div className="fixed inset-0 z-100 flex flex-col items-center justify-center gap-5 bg-background/95 backdrop-blur-sm">
@@ -126,43 +130,24 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
     );
   }
 
-  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    const formData = new FormData(e.currentTarget);
-
-    const fullName = String(formData.get("fullName") ?? "").trim();
-    const phone = String(formData.get("phone") ?? "").trim();
-    const city = String(formData.get("city") ?? "").trim();
-    const address = String(formData.get("address") ?? "").trim();
-
-    const newErrors: CheckoutErrors = {};
-
-    if (fullName.length < 2) {
-      newErrors.fullName = "Please enter your full name.";
-    }
-
-    const phoneDigits = phone.replace(/\D/g, "");
-
-    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
-      newErrors.phone = "Please enter a valid phone number.";
-    }
-
-    if (!city) {
-      newErrors.city = "Please enter your city.";
-    }
-
-    if (!address) {
-      newErrors.address = "Please enter your delivery address.";
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0 || minimumOrderNotMet) return;
+  async function onSubmit(values: CheckoutFormValues) {
+    if (minimumOrderNotMet) return;
 
     try {
-      setIsPending(true);
       setSubmitError("");
+
+      const formData = new FormData();
+
+      formData.set("fullName", values.fullName.trim());
+      formData.set("email", email);
+      formData.set("phone", values.phone.trim());
+      formData.set("city", values.city.trim());
+      formData.set("address", values.address.trim());
+      formData.set("orderNotes", values.orderNotes.trim());
+      formData.set("payment", values.payment);
+
+      formData.set("latitude", deliveryLocation?.latitude.toString() ?? "");
+      formData.set("longitude", deliveryLocation?.longitude.toString() ?? "");
 
       const result = await createOrderWithData(formData);
 
@@ -170,27 +155,16 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
         throw new Error("Unable to confirm your order.");
       }
 
-      // Keep the cart intact during navigation.
       setIsRedirecting(true);
+
       router.push(`/checkout/success?orderId=${result.orderId}`);
     } catch (error) {
-      setIsRedirecting(false);
-
       setSubmitError(
         error instanceof Error
           ? error.message
           : "Something went wrong while placing your order.",
       );
-    } finally {
-      setIsPending(false);
     }
-  }
-
-  function handleFieldChange(field: keyof CheckoutErrors) {
-    setErrors((current) => ({
-      ...current,
-      [field]: undefined,
-    }));
   }
 
   return (
@@ -206,7 +180,7 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
       <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(285px,0.75fr)] items-start gap-7 max-[950px]:grid-cols-[minmax(0,1.1fr)_minmax(255px,0.9fr)] max-[950px]:gap-4.5 max-[700px]:grid-cols-[minmax(0,1fr)] max-[700px]:gap-3.75">
         <form
           className="min-w-0 rounded-[14px] border border-white/8.5 bg-[linear-gradient(145deg,rgba(255,255,255,0.025),transparent_48%),var(--surface)] p-6 shadow-[0_14px_38px_rgba(0,0,0,0.15)] max-[950px]:p-4.75 max-[700px]:rounded-xl max-[700px]:p-4.25 max-[480px]:p-3.75"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           noValidate
         >
           <div className="mb-6 w-full min-w-0 max-[700px]:mb-5">
@@ -220,13 +194,17 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
                 if (location.isResolvingAddress) return;
 
                 if (location.city) {
-                  setCity(location.city);
-                  handleFieldChange("city");
+                  setValue("city", location.city, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
                 }
 
                 if (location.addressLine) {
-                  setAddress(location.addressLine);
-                  handleFieldChange("address");
+                  setValue("address", location.addressLine, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
                 }
               }}
             />
@@ -253,107 +231,109 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
           </div>
 
           <div className="grid grid-cols-2 gap-3.75 max-[700px]:grid-cols-[minmax(0,1fr)] max-[700px]:gap-3.25">
-            <label className={checkoutLabelClasses}>
+            <label className="flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5]">
               Full name *
               <input
-                name="fullName"
-                required
+                {...register("fullName", {
+                  required: "Please enter your full name.",
+                  validate: (value) =>
+                    value.trim().length >= 2 || "Please enter a valid name.",
+                })}
                 placeholder="Your name"
                 aria-invalid={!!errors.fullName}
-                onChange={() => handleFieldChange("fullName")}
-                className={checkoutInputClasses}
+                className="min-h-11.25 w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-invalid:border-[#ef6b5b] max-[480px]:min-h-10.75"
               />
               {errors.fullName && (
                 <span className="mt-1.5 block text-[12px] leading-[1.4] text-[#ef6b5b]">
-                  {errors.fullName}
+                  {errors.fullName.message}
                 </span>
               )}
             </label>
 
-            <label className={checkoutLabelClasses}>
+            <label className="flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5]">
               Email
               <input
-                name="email"
                 type="email"
                 value={email}
                 disabled
                 aria-readonly="true"
-                className={`${checkoutInputClasses} disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-muted disabled:opacity-85 disabled:[-webkit-text-fill-color:var(--muted)]`}
+                className="min-h-11.25 w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-invalid:border-[#ef6b5b] max-[480px]:min-h-10.75 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-2 disabled:text-muted disabled:opacity-85 disabled:[-webkit-text-fill-color:var(--muted)]"
               />
             </label>
 
-            <label className={checkoutLabelClasses}>
+            <label className="flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5]">
               Phone *
               <input
-                name="phone"
+                {...register("phone", {
+                  required: "Please enter your phone number.",
+                  validate: (value) => {
+                    const digits = value.replace(/\D/g, "");
+
+                    return (
+                      (digits.length >= 7 && digits.length <= 15) ||
+                      "Please enter a valid phone number."
+                    );
+                  },
+                })}
                 type="tel"
-                required
                 placeholder="Phone number"
                 aria-invalid={!!errors.phone}
-                onChange={() => handleFieldChange("phone")}
-                className={checkoutInputClasses}
+                className="min-h-11.25 w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-invalid:border-[#ef6b5b] max-[480px]:min-h-10.75"
               />
               {errors.phone && (
                 <span className="mt-1.5 block text-[12px] leading-[1.4] text-[#ef6b5b]">
-                  {errors.phone}
+                  {errors.phone.message}
                 </span>
               )}
             </label>
 
-            <label className={checkoutLabelClasses}>
+            <label className="flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5]">
               City *
               <input
-                name="city"
-                required
+                {...register("city", {
+                  required: "Please enter your city.",
+                  validate: (value) =>
+                    value.trim().length > 0 || "Please enter your city.",
+                })}
                 placeholder="City"
-                value={city}
                 aria-invalid={!!errors.city}
-                onChange={(event) => {
-                  setCity(event.target.value);
-                  handleFieldChange("city");
-                }}
-                className={checkoutInputClasses}
+                className="min-h-11.25 w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-invalid:border-[#ef6b5b] max-[480px]:min-h-10.75"
               />
               {errors.city && (
                 <span className="mt-1.5 block text-[12px] leading-[1.4] text-[#ef6b5b]">
-                  {errors.city}
+                  {errors.city.message}
                 </span>
               )}
             </label>
 
-            <label
-              className={`${checkoutLabelClasses} col-span-full max-[700px]:col-auto`}
-            >
+            <label className="col-span-full flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5] max-[700px]:col-auto">
               Delivery address *
               <textarea
-                name="address"
-                required
+                {...register("address", {
+                  required: "Please enter your delivery address.",
+                  validate: (value) =>
+                    value.trim().length > 0 ||
+                    "Please enter your delivery address.",
+                })}
                 rows={3}
                 placeholder="Street, building, apartment..."
-                value={address}
                 aria-invalid={!!errors.address}
-                onChange={(event) => {
-                  setAddress(event.target.value);
-                  handleFieldChange("address");
-                }}
-                className={checkoutTextareaClasses}
+                className="w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] aria-invalid:border-[#ef6b5b] min-h-22 resize-y max-[480px]:min-h-20.5"
               />
               {errors.address && (
                 <span className="mt-1.5 block text-[12px] leading-[1.4] text-[#ef6b5b]">
-                  {errors.address}
+                  {errors.address.message}
                 </span>
               )}
             </label>
 
-            <label
-              className={`${checkoutLabelClasses} col-span-full max-[700px]:col-auto`}
-            >
+            <label className="col-span-full flex flex-col gap-1.75 text-[11px] font-semibold text-[#d9dbd5] max-[700px]:col-auto">
               Delivery instructions (optional)
               <textarea
-                name="orderNotes"
+                {...register("orderNotes")}
                 rows={3}
                 placeholder="Anything we should know?"
-                className={checkoutTextareaClasses}
+                className="w-full rounded-lg border border-white/11 bg-input-bg px-3.25 py-2.75 text-[12px] text-foreground outline-none transition-[border-color,background-color,box-shadow] duration-180 placeholder:text-[#737a71] focus:border-accent/80 focus:bg-[#171917] focus:shadow-[0_0_0_3px_rgba(232,117,50,0.1)] min-h-22 resize-y max-[480px]:min-h-20.5"
               />
             </label>
           </div>
@@ -366,21 +346,20 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
             </div>
           </div>
 
-          <label className={checkoutRadioRowClasses}>
+          <label className="my-2 flex min-h-11.75 cursor-pointer flex-row items-center gap-2.5 rounded-[9px] border border-line bg-white/[0.018] px-3.25 py-2.75 text-[11px] font-semibold text-[#e2e3de] transition-colors duration-180 has-[input:checked]:border-accent/55 has-[input:checked]:bg-accent/7.5">
             <input
+              {...register("payment")}
               type="radio"
-              name="payment"
               value="cod"
-              defaultChecked
               className="m-0 h-4 w-4 accent-accent"
             />
             Cash on delivery
           </label>
 
-          <label className={checkoutRadioRowClasses}>
+          <label className="my-2 flex min-h-11.75 cursor-pointer flex-row items-center gap-2.5 rounded-[9px] border border-line bg-white/[0.018] px-3.25 py-2.75 text-[11px] font-semibold text-[#e2e3de] transition-colors duration-180 has-[input:checked]:border-accent/55 has-[input:checked]:bg-accent/7.5">
             <input
+              {...register("payment")}
               type="radio"
-              name="payment"
               value="online"
               className="m-0 h-4 w-4 accent-accent"
             />
@@ -390,9 +369,9 @@ export default function CheckoutForm({ email, settings }: CheckoutFormProps) {
           <button
             className="mt-3.75 inline-flex min-h-12.5 w-full items-center justify-center gap-2.5 rounded-[9px] border border-transparent bg-accent px-5.25 text-[12px] font-bold text-[#17130f] shadow-[0_7px_18px_rgba(232,117,50,0.14)] transition-[transform,background-color] duration-200 hover:enabled:-translate-y-0.5 hover:enabled:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70 max-[480px]:min-h-12"
             type="submit"
-            disabled={isPending || minimumOrderNotMet}
+            disabled={isSubmitting || minimumOrderNotMet}
           >
-            {isPending ? (
+            {isSubmitting ? (
               <>
                 <LoaderCircle
                   size={16}

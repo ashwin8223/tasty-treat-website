@@ -1,11 +1,8 @@
 "use client";
 
 import { useCallback, useRef, useState, type KeyboardEvent } from "react";
-
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-
 import { DayPicker } from "react-day-picker";
-
 import { useClickOutside } from "../_hooks/useClickOutside";
 
 type ReservationDatePickerProps = {
@@ -13,14 +10,12 @@ type ReservationDatePickerProps = {
   onChange: (date: Date | undefined) => void;
 };
 
-const fieldClasses =
-  "w-full rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-[12px] text-foreground outline-none placeholder:text-[#737a71] focus:border-accent";
-
 export function ReservationDatePicker({
   value,
   onChange,
 }: ReservationDatePickerProps) {
   const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(value ?? new Date());
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const closeCalendar = useCallback(() => {
@@ -43,6 +38,14 @@ export function ReservationDatePicker({
     }
   }
 
+  function handleOpen() {
+    if (!open) {
+      setMonth(value ?? new Date());
+    }
+
+    setOpen((previous) => !previous);
+  }
+
   return (
     <div
       ref={calendarRef}
@@ -51,8 +54,8 @@ export function ReservationDatePicker({
     >
       <button
         type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        className={`${fieldClasses} flex items-center justify-between text-left transition-colors ${
+        onClick={handleOpen}
+        className={`flex w-full items-center justify-between rounded-[7px] border border-line bg-input-bg px-3.5 py-3.25 text-left text-[12px] text-foreground outline-none placeholder:text-[#737a71] transition-colors focus:border-accent ${
           open ? "border-accent/60" : "hover:border-accent/60"
         }`}
         aria-expanded={open}
@@ -67,13 +70,15 @@ export function ReservationDatePicker({
 
       {open && (
         <div
-          className="scrollbar-tasty animate-dropdown-appear absolute top-[calc(100%+7px)] left-0 z-50 max-w-[calc(100vw-32px)] rounded-lg border border-accent/20 bg-surface p-1.25 shadow-[0_12px_30px_rgba(0,0,0,0.4)] max-[700px]:top-auto max-[700px]:bottom-[calc(100%+7px)]"
+          className="scrollbar-tasty animate-dropdown-appear absolute left-0 top-[calc(100%+7px)] z-50 max-w-[calc(100vw-32px)] rounded-lg border border-accent/20 bg-surface p-1.25 shadow-[0_12px_30px_rgba(0,0,0,0.4)] max-[700px]:bottom-[calc(100%+7px)] max-[700px]:left-auto max-[700px]:right-0 max-[700px]:top-auto max-[700px]:w-[min(320px,calc(100vw-32px))] max-[700px]:max-h-[calc(100dvh-24px)] max-[700px]:overflow-y-auto"
           role="dialog"
           aria-label="Choose reservation date"
         >
           <DayPicker
             mode="single"
             selected={value}
+            month={month}
+            onMonthChange={setMonth}
             onSelect={(date) => {
               onChange(date);
 
@@ -88,18 +93,18 @@ export function ReservationDatePicker({
             className="text-foreground"
             classNames={{
               root: "w-full",
-              months: "flex",
-              month: "space-y-3",
+              months: "flex w-full",
+              month: "w-full space-y-3",
               month_caption:
-                "flex items-center justify-center relative h-9 mb-2",
+                "relative flex items-center justify-center h-9 mb-2",
               caption_label: "text-[13px] font-semibold text-foreground",
-              nav: "flex items-center justify-between absolute inset-x-0 top-0",
+              nav: "absolute inset-x-0 top-0 z-10 flex items-center justify-between h-9 pointer-events-none",
               button_previous:
-                "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-input-bg hover:text-foreground transition-colors",
+                "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-input-bg hover:text-foreground transition-colors",
               button_next:
-                "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-input-bg hover:text-foreground transition-colors",
+                "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-input-bg hover:text-foreground transition-colors",
               month_grid: "w-full border-collapse",
-              weekdays: "flex",
+              weekdays: "flex w-full",
               weekday:
                 "flex-1 py-2 text-center text-[10px] font-medium text-muted",
               week: "flex w-full mt-1",

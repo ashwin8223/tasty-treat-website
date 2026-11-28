@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +14,7 @@ import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import type { MenuItem } from "../_lib/data-service";
 import { useCart } from "./CartProvider";
 import Image from "next/image";
+import { useClickOutside } from "../_hooks/useClickOutside";
 
 // Provides a client-only mount signal so the portal is rendered after hydration.
 function subscribeToMount() {
@@ -524,25 +531,11 @@ export function Chatbot() {
   const replyTimeoutRef = useRef<number | null>(null);
   const chatbotRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  const closeChat = useCallback(() => {
+    setIsOpen(false);
+  }, []);
 
-    function handleOutsideClick(event: PointerEvent) {
-      if (
-        chatbotRef.current &&
-        event.target instanceof Node &&
-        !chatbotRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handleOutsideClick);
-
-    return () => {
-      document.removeEventListener("pointerdown", handleOutsideClick);
-    };
-  }, [isOpen]);
+  useClickOutside(chatbotRef, closeChat);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

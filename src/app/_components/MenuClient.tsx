@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MenuCard } from "./MenuCard";
 import type { MenuItem } from "../_lib/data-service";
+import { useClickOutside } from "../_hooks/useClickOutside";
 
 const cuisines = [
   "All",
@@ -29,28 +30,23 @@ export function MenuClient({ menuItems }: { menuItems: MenuItem[] }) {
 
   const categoryRef = useRef<HTMLDivElement>(null);
 
-  // Close category dropdown when clicking outside or pressing Escape
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        categoryRef.current &&
-        !categoryRef.current.contains(event.target as Node)
-      ) {
-        setCategoryOpen(false);
-      }
-    }
+  const closeCategoryDropdown = useCallback(() => {
+    setCategoryOpen(false);
+  }, []);
 
+  useClickOutside(categoryRef, closeCategoryDropdown);
+
+  // Close category dropdown when pressing Escape
+  useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setCategoryOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
