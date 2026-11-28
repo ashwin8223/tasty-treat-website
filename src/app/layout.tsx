@@ -6,7 +6,7 @@ import { CartProvider } from "./_components/CartProvider";
 import { CartBottomBar } from "./_components/CartBottomBar";
 import { Header } from "./_components/Header";
 import { Footer } from "./_components/Footer";
-import { Chatbot } from "./_components/Chatbot";
+import { Chatbot } from "./_components/chatbot/Chatbot";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
